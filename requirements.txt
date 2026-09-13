@@ -1,0 +1,2 @@
+# The library itself uses only the standard library (Python >= 3.10).
+pytest

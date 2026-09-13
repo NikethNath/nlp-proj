@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Downloaded sources - fetched by scripts/fetch_data.sh
+data/raw/
+
+# Generated corpus - rebuilt from source data
+data/derived/
