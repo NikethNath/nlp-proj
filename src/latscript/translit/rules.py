@@ -83,6 +83,13 @@ TA_INITIAL = {"ச": "ch"}
 ML_NASAL_VOICING = {"k": "g", "ch": "j", "t": "d", "p": "b"}
 ML_INTERVOCALIC = {"t": "d"}
 ML_NASALS = {"ng", "nj", "n", "m"}
+# Conjuncts whose sound is not the sum of their letters. Measured against
+# Dakshina: Malayalam rra+rra is typed "tt" 76% of the time (never "rr"), and
+# na+rra "nt" 99%; Tamil rra+rra is "ttr" 52% / "tr" 46%, and na+rra "ndr" 70%.
+# Newer Malayalam text may encode na+rra with an atomic chillu before the virama.
+ML_CLUSTERS = {"റ്റ": "tt", "ന്റ": "nt", "ൻ്റ": "nt"}
+TA_CLUSTERS = {"ற்ற": "ttr", "ன்ற": "ndr"}
+
 # Word-final virama in Malayalam is the half-u (samvruthokaram): veedu, not veet.
 ML_FINAL_SCHWA = "u"
 # Geminate nasals are conventionally written single: njangal, not njangngal.
@@ -95,7 +102,7 @@ _VOWEL_CHARS = set("aeiou")
 class _Script:
     def __init__(self, virama, vowels, signs, consonants, marks, digits,
                  chillu=frozenset(), voicing=None, nasal_voicing=None,
-                 initial=None, final_schwa=""):
+                 initial=None, final_schwa="", clusters=None):
         self.virama = virama
         self.vowels = vowels
         self.vowel_signs = signs
@@ -107,16 +114,18 @@ class _Script:
         self.nasal_voicing = nasal_voicing or {}
         self.initial = initial or {}
         self.final_schwa = final_schwa
+        # Longest first, so a longer conjunct is never shadowed by a prefix.
+        self.clusters = sorted((clusters or {}).items(), key=lambda kv: -len(kv[0]))
 
 
 MALAYALAM = _Script(ML_VIRAMA, ML_INDEPENDENT_VOWELS, ML_VOWEL_SIGNS,
                     ML_CONSONANTS, ML_SIGNS, ML_DIGITS, ML_CHILLU,
                     voicing=ML_INTERVOCALIC, nasal_voicing=ML_NASAL_VOICING,
-                    final_schwa=ML_FINAL_SCHWA)
+                    final_schwa=ML_FINAL_SCHWA, clusters=ML_CLUSTERS)
 TAMIL = _Script(TA_VIRAMA, TA_INDEPENDENT_VOWELS, TA_VOWEL_SIGNS,
                 TA_CONSONANTS, {**TA_SIGNS, **TA_AYTHAM}, TA_DIGITS,
                 voicing=TA_VOICING, nasal_voicing=TA_NASAL_VOICING,
-                initial=TA_INITIAL)
+                initial=TA_INITIAL, clusters=TA_CLUSTERS)
 
 SCRIPTS = {"ml": MALAYALAM, "ta": TAMIL}
 
@@ -127,20 +136,28 @@ def _transliterate_word(word: str, sc: _Script, voice: bool) -> str:
     i, n = 0, len(word)
     while i < n:
         ch = word[i]
-        if ch in sc.consonants:
-            at_start = not out
-            cons = sc.initial[ch] if (at_start and ch in sc.initial) else sc.consonants[ch]
-            nxt = word[i + 1] if i + 1 < n else ""
-            final_schwa_here = bool(sc.final_schwa) and nxt == sc.virama and i + 2 >= n
+        cluster = next(((seq, rom) for seq, rom in sc.clusters if word.startswith(seq, i)), None)
+        if cluster or ch in sc.consonants:
+            if cluster:
+                # A conjunct behaves as one consonant: it takes the following
+                # vowel sign, inherent vowel or virama, and never voices.
+                width, cons = len(cluster[0]), cluster[1]
+            else:
+                width = 1
+                cons = sc.initial[ch] if (not out and ch in sc.initial) else sc.consonants[ch]
+            last = i + width - 1
+            nxt = word[last + 1] if last + 1 < n else ""
+            final_schwa_here = bool(sc.final_schwa) and nxt == sc.virama and last + 2 >= n
 
-            if voice and (nxt != sc.virama or final_schwa_here):
+            if voice and not cluster and (nxt != sc.virama or final_schwa_here):
                 if prev_was_nasal_cluster and cons in sc.nasal_voicing:
                     cons = sc.nasal_voicing[cons]
                 elif (cons in sc.voicing and out and out[-1][-1:] in _VOWEL_CHARS):
                     cons = sc.voicing[cons]
 
             out.append(cons)
-            if ch in sc.chillu:
+            i = last
+            if not cluster and ch in sc.chillu:
                 prev_was_nasal_cluster = cons in ML_NASALS
                 i += 1
                 continue

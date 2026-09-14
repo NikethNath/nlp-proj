@@ -124,7 +124,7 @@ class SpellingNoise:
         return rng.choices(keys, weights=weights, k=1)[0]
 
     def writer(self, rng: random.Random, consistency: float = 0.85,
-               min_habit_prob: float = 0.10) -> "Writer":
+               min_habit_prob: float = 0.10, name: str = "") -> "Writer":
         """Draw one person, with habits they mostly stick to.
 
         Tamil is the clearest case: 67% of annotators render `dh` as "th" and
@@ -145,7 +145,7 @@ class SpellingNoise:
             choice = self._draw(key[0], key[1], rng)
             if counter[choice] / total >= min_habit_prob:
                 habits[key] = choice
-        return Writer(self, habits, consistency)
+        return Writer(self, habits, consistency, name)
 
 
 @dataclass
@@ -155,6 +155,7 @@ class Writer:
     noise: "SpellingNoise"
     habits: dict[tuple[str, bool], str]
     consistency: float = 0.85
+    name: str = ""
 
     def spell(self, roman: str, rng: random.Random) -> str:
         out, off = [], 0
@@ -175,3 +176,86 @@ class Writer:
 
     def __len__(self) -> int:
         return len(self.table)
+
+
+class CharPlausibility:
+    """Character-trigram check against every human romanization in Dakshina.
+
+    Unit-level resampling occasionally assembles a string no human would
+    produce ("ncangalude"). A token containing a trigram, word boundaries
+    included, that annotators wrote fewer than `min_count` times is flagged.
+    Genuine human spellings of held-out words trip this ~3.5% of the time,
+    almost all rare foreign names, which is the floor any generator can reach.
+    """
+
+    def __init__(self, lex: Lexicon, min_count: int = 3):
+        self.min_count = min_count
+        self.counts: Counter = Counter()
+        for spellings in lex.entries.values():
+            for spelling, n in spellings.items():
+                for tri in self._trigrams(spelling):
+                    self.counts[tri] += n
+
+    @staticmethod
+    def _trigrams(word: str) -> list[str]:
+        padded = f"^{word}$"
+        return [padded[i:i + 3] for i in range(len(padded) - 2)]
+
+    def unseen(self, word: str) -> int:
+        """Number of rare trigrams in `word`; 0 means plausible."""
+        if not (word.isascii() and word.isalpha()):
+            return 0
+        return sum(self.counts[t] < self.min_count for t in self._trigrams(word.lower()))
+
+
+@dataclass
+class NaturalSpeller:
+    """Turns one native word into what a given simulated writer would type.
+
+    Every choice is seeded by (writer, word), so a writer spells a given word
+    the same way everywhere in the corpus, as people do.
+
+    1. A draft is made by applying the writer's habits to the *rule*
+       romanization, which is what the noise model was fitted against.
+    2. If humans attested the word at least `min_attestations` times, the
+       writer samples one of those real spellings with weight
+       ``count * exp(-beta * edit_distance(draft, spelling))``. The count term
+       keeps between-writer variation human-like; the distance term keeps each
+       writer's choices consistent with their habits. On FLORES tokens,
+       ``beta=0.5`` reproduces ~80% of the pairwise disagreement between
+       Dakshina annotators while writers' long-vowel habits stay stable across
+       the corpus (split-half r > 0.9). Snapping to the nearest spelling
+       instead (``beta=None``) keeps only ~50-58% and makes L3 too tame.
+    3. Otherwise up to `tries` draws are taken and the most plausible under
+       the character model wins, falling back to the rule romanization.
+    """
+
+    lexicon: Lexicon
+    noise: SpellingNoise
+    plausibility: CharPlausibility
+    min_attestations: int = 3
+    tries: int = 4
+    beta: float | None = 0.5
+
+    def spell(self, native: str, writer: Writer) -> str:
+        import math
+
+        from .distance import edit_distance
+
+        rng = random.Random(f"{writer.name}|{native}")
+        rule = transliterate(native, self.lexicon.lang)
+        attested = self.lexicon.entries.get(native)
+        if attested and sum(attested.values()) >= self.min_attestations:
+            draft = writer.spell(rule, rng)
+            spellings = sorted(attested)
+            if self.beta is None:
+                return min(spellings, key=lambda h: (edit_distance(draft, h), -attested[h]))
+            weights = [attested[h] * math.exp(-self.beta * edit_distance(draft, h))
+                       for h in spellings]
+            return rng.choices(spellings, weights=weights, k=1)[0]
+
+        candidates = [writer.spell(rule, rng) for _ in range(self.tries)]
+        best = min(candidates, key=self.plausibility.unseen)
+        if self.plausibility.unseen(best) and not self.plausibility.unseen(rule):
+            return rule
+        return best

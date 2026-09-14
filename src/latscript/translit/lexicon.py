@@ -24,23 +24,16 @@ Tamil attestations.
 from __future__ import annotations
 
 import random
-import re
 from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from .distance import normalized_edit_distance
 from .rules import transliterate
+from .tokens import map_words, words
 
 DEFAULT_ROOT = Path(__file__).resolve().parents[3] / "data" / "raw" / "dakshina_dataset_v1.0"
 SENT_BREAK = "</s>"
-
-# Split on runs of non-letters so punctuation survives untouched in its own slot.
-# Python's \w excludes combining marks, so a bare \W split would cut every word
-# at its vowel signs and viramas; the Tamil and Malayalam blocks (and the joiners
-# used to form chillus) are listed explicitly as word characters.
-_TOKEN = re.compile(r"([^\w\u0B80-\u0BFF\u0D00-\u0D7F\u200c\u200d]+)")
-
 
 @dataclass
 class Lexicon:
@@ -50,6 +43,8 @@ class Lexicon:
     entries: dict[str, Counter] = field(default_factory=dict)
     max_distance: float | None = 0.6
     rejected: int = 0
+    # Model-derived single spellings (Aksharantar) for words no human attested.
+    backoff: dict[str, str] = field(default_factory=dict)
 
     # -- construction ------------------------------------------------------
     @classmethod
@@ -106,10 +101,10 @@ class Lexicon:
 
     # -- lookup ------------------------------------------------------------
     def canonical(self, word: str) -> str:
-        """Modal human spelling, falling back to the rule romanizer for OOV."""
+        """Modal human spelling, else the backoff spelling, else the rules."""
         counts = self.entries.get(word)
         if not counts:
-            return transliterate(word, self.lang)
+            return self.backoff.get(word) or transliterate(word, self.lang)
         # max() over (count, spelling) keeps ties deterministic.
         return max(counts.items(), key=lambda kv: (kv[1], kv[0]))[0]
 
@@ -125,27 +120,16 @@ class Lexicon:
         return len(self.entries.get(word, ()))
 
     # -- sentence level ----------------------------------------------------
-    def _map_sentence(self, text: str, pick) -> str:
-        return "".join(
-            part if not part or _TOKEN.fullmatch(part) else pick(part)
-            for part in _TOKEN.split(text)
-        )
-
     def canonical_sentence(self, text: str) -> str:
-        return self._map_sentence(text, self.canonical)
+        return map_words(text, self.canonical)
 
     def sample_sentence(self, text: str, rng: random.Random) -> str:
-        return self._map_sentence(text, lambda w: self.sample(w, rng))
+        return map_words(text, lambda w: self.sample(w, rng))
 
     def coverage(self, text: str) -> tuple[int, int]:
-        """(tokens found in the lexicon, native-script tokens) for `text`."""
-        hit = total = 0
-        for part in _TOKEN.split(text):
-            if not part or _TOKEN.fullmatch(part):
-                continue
-            total += 1
-            hit += part in self.entries
-        return hit, total
+        """(tokens found in the lexicon, word tokens) for `text`."""
+        toks = words(text)
+        return sum(t in self.entries for t in toks), len(toks)
 
     def __len__(self) -> int:
         return len(self.entries)

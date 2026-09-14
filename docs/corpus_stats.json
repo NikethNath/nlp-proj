@@ -1,0 +1,175 @@
+{
+ "flores": {
+  "ml": {
+   "sentences": 2009,
+   "native_word_tokens": 28801,
+   "human_attested_word_share": 0.678,
+   "with_aksharantar_word_share": 0.8683,
+   "l3_word_differs_from_l2_lexical": 0.3794,
+   "l3_word_differs_from_l2_canonical": 0.5125,
+   "l3_writer_pair_word_disagreement": 0.4276,
+   "human_annotator_pair_word_disagreement": 0.5225,
+   "l3_writer_pair_sentence_ned": 0.0642,
+   "l3_implausible_token_rate": 0.011,
+   "indicxlit_is_attested_human_spelling": 0.8925,
+   "indicxlit_is_modal_human_spelling": 0.6301,
+   "lexicon_pairs_rejected_as_misaligned": 2706
+  },
+  "ta": {
+   "sentences": 2009,
+   "native_word_tokens": 32173,
+   "human_attested_word_share": 0.773,
+   "with_aksharantar_word_share": 0.9365,
+   "l3_word_differs_from_l2_lexical": 0.3865,
+   "l3_word_differs_from_l2_canonical": 0.5047,
+   "l3_writer_pair_word_disagreement": 0.4269,
+   "human_annotator_pair_word_disagreement": 0.5787,
+   "l3_writer_pair_sentence_ned": 0.0689,
+   "l3_implausible_token_rate": 0.0128,
+   "indicxlit_is_attested_human_spelling": 0.9052,
+   "indicxlit_is_modal_human_spelling": 0.6158,
+   "lexicon_pairs_rejected_as_misaligned": 5755
+  }
+ },
+ "dravidiancodemix": {
+  "ml": {
+   "train": {
+    "comments": 9688,
+    "script": {
+     "latin": 6096,
+     "native": 2363,
+     "mixed": 1223,
+     "none": 6
+    },
+    "labels": {
+     "not_offensive": 8618,
+     "not_in_language": 709,
+     "offensive_targeted_individual": 143,
+     "offensive_untargeted": 130,
+     "offensive_targeted_group": 88
+    },
+    "offensive_share": 0.0373,
+    "latin_in_language": 5396,
+    "latin_in_language_offensive": 242,
+    "collapsed_duplicate_groups": 3097,
+    "label_conflicts": 1,
+    "with_l1_backtranslit": 0
+   },
+   "dev": {
+    "comments": 1077,
+    "script": {
+     "latin": 680,
+     "mixed": 127,
+     "native": 269,
+     "none": 1
+    },
+    "labels": {
+     "not_offensive": 958,
+     "not_in_language": 79,
+     "offensive_targeted_group": 10,
+     "offensive_untargeted": 14,
+     "offensive_targeted_individual": 16
+    },
+    "offensive_share": 0.0371,
+    "latin_in_language": 602,
+    "latin_in_language_offensive": 27,
+    "collapsed_duplicate_groups": 334,
+    "label_conflicts": 1,
+    "with_l1_backtranslit": 807
+   },
+   "test": {
+    "comments": 1921,
+    "script": {
+     "latin": 1176,
+     "native": 500,
+     "mixed": 240,
+     "none": 5
+    },
+    "labels": {
+     "not_offensive": 1709,
+     "not_in_language": 156,
+     "offensive_targeted_group": 13,
+     "offensive_untargeted": 20,
+     "offensive_targeted_individual": 23
+    },
+    "offensive_share": 0.0292,
+    "latin_in_language": 1023,
+    "latin_in_language_offensive": 32,
+    "collapsed_duplicate_groups": 77,
+    "label_conflicts": 0,
+    "with_l1_backtranslit": 1416
+   }
+  },
+  "ta": {
+   "train": {
+    "comments": 34756,
+    "script": {
+     "latin": 28112,
+     "native": 5545,
+     "mixed": 1043,
+     "none": 56
+    },
+    "labels": {
+     "not_offensive": 25109,
+     "not_in_language": 1442,
+     "offensive_untargeted": 2883,
+     "offensive_targeted_group": 2541,
+     "offensive_targeted_individual": 2331,
+     "offensive_targeted_other": 450
+    },
+    "offensive_share": 0.2361,
+    "latin_in_language": 26727,
+    "latin_in_language_offensive": 6893,
+    "collapsed_duplicate_groups": 180,
+    "label_conflicts": 10,
+    "with_l1_backtranslit": 0
+   },
+   "dev": {
+    "comments": 4369,
+    "script": {
+     "latin": 3555,
+     "native": 681,
+     "mixed": 128,
+     "none": 5
+    },
+    "labels": {
+     "not_in_language": 171,
+     "offensive_targeted_group": 294,
+     "offensive_targeted_individual": 304,
+     "not_offensive": 3180,
+     "offensive_untargeted": 355,
+     "offensive_targeted_other": 65
+    },
+    "offensive_share": 0.233,
+    "latin_in_language": 3391,
+    "latin_in_language_offensive": 873,
+    "collapsed_duplicate_groups": 5,
+    "label_conflicts": 0,
+    "with_l1_backtranslit": 3683
+   },
+   "test": {
+    "comments": 4382,
+    "script": {
+     "latin": 3570,
+     "mixed": 137,
+     "native": 669,
+     "none": 6
+    },
+    "labels": {
+     "not_offensive": 3184,
+     "offensive_targeted_group": 288,
+     "offensive_targeted_other": 71,
+     "offensive_targeted_individual": 315,
+     "not_in_language": 159,
+     "offensive_untargeted": 365
+    },
+    "offensive_share": 0.2371,
+    "latin_in_language": 3418,
+    "latin_in_language_offensive": 869,
+    "collapsed_duplicate_groups": 10,
+    "label_conflicts": 2,
+    "with_l1_backtranslit": 3707
+   }
+  }
+ }
+}

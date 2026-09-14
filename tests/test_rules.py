@@ -24,6 +24,10 @@ MALAYALAM = [
     ("വീട്", "veedu"),              # final half-u licenses voicing
     ("ഉണ്ട്", "undu"),              # nasal cluster + final half-u
     ("ഞങ്ങളുടെ", "njangalude"),     # geminate nasal collapses; ta voices
+    ("ഏറ്റവും", "ettavum"),          # rra+rra is "tt", not "rr"
+    ("എന്റെ", "ente"),               # na+rra is "nt"
+    ("എൻ്റെ", "ente"),               # same, atomic-chillu encoding
+    ("കൊളാബൊറേറ്റർ", "kolaaborettar"),  # conjunct takes the inherent vowel
 ]
 
 TAMIL = [
@@ -36,6 +40,8 @@ TAMIL = [
     ("சிறு", "chiru"),
     ("இசை", "isai"),                # ...but a sibilant between vowels
     ("எங்கள்", "engal"),            # nasal already voices the cluster
+    ("வெற்றி", "vettri"),           # rra+rra, modal human spelling "ttr"
+    ("ஒன்று", "ondru"),             # na+rra is "ndr"
 ]
 
 
@@ -59,6 +65,5 @@ def test_unknown_language_rejected():
 
 
 def test_sentence_tokenizer_keeps_vowel_signs_inside_words():
-    from latscript.translit.lexicon import _TOKEN
-    words = [p for p in _TOKEN.split("பிற வல்லுனர்கள், ഞങ്ങളുടെ വീട്.") if p and not _TOKEN.fullmatch(p)]
-    assert words == ["பிற", "வல்லுனர்கள்", "ഞങ്ങളുടെ", "വീട്"]
+    from latscript.translit.tokens import words
+    assert words("பிற வல்லுனர்கள், ഞങ്ങളുടെ വീട്.") == ["பிற", "வல்லுனர்கள்", "ഞങ്ങളുടെ", "വീട്"]
