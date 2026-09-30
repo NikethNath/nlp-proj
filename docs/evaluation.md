@@ -78,14 +78,16 @@ no model and is the FLORES-200 standard.
 smaller, reliable penalty.** On every task that measures understanding, the
 L1 → L2 gap is several times the L2 → L3 gap. Against the lexical L2, the one
 that isolates spelling variance, the spelling share of the total loss is
-about 1-12%.
+about 1-17%.
 
 | Task | Model | Lang | L1 | L2 lexical | L3 | Spelling share |
 |---|---|---|---|---|---|---|
 | Retrieval to English (top-1) | LaBSE | ml / ta | 1.00 / 1.00 | 0.44 / 0.34 | 0.37 / 0.28 | 11% / 8% |
 | | BGE-M3 | ml / ta | 1.00 / 1.00 | 0.44 / 0.31 | 0.36 / 0.23 | 12% / 11% |
 | Translation (chrF++) | NLLB-600M | ml / ta | 59.1 / 55.8 | 14.9 / 13.1 | 13.7 / 12.6 | 3% / 1% |
+| | Qwen2.5-7B (core subset) | ml / ta | 37.9 / 33.8 | 24.8 / 19.8 | 23.7 / 19.0 | 8% / 6% |
 | Surprisal (bits/word, lower is better) | Qwen2.5-1.5B | ml / ta | 23.1 / 20.0 | 35.4 / 32.7 | 36.1 / 33.1 | 5% / 3% |
+| | Sarvam-1 | ml / ta | 13.5 / 11.9 | 21.9 / 20.6 | 23.7 / 22.3 | 17% / 17% |
 
 - **Retrieval.** Both encoders map native-script sentences onto their English
   translations almost perfectly. Romanized, only a third to a half still find
@@ -101,10 +103,23 @@ about 1-12%.
   here does not mean the model tolerates variation. Scale does not help. On
   the core subset NLLB-1.3B scores 2-3 points higher than 600M in every
   condition, but its script gap is the same 42-43 points.
-- **Surprisal.** Romanized text costs Qwen2.5-1.5B about 12-13 extra bits per
-  word. That holds even though its tokenizer handles romanized text far more
-  cheaply (next point), so the cost is unfamiliarity, not tokenization.
-  Inconsistent spelling adds 0.4-0.7 bits.
+- **Translation: an LLM trades native-script quality for robustness.**
+  Qwen2.5-7B translates native script much worse than NLLB (chrF++ 38/34
+  against 58/55 on the same core sentences). It does translate romanized
+  input: its copy rate is under 3%, and romanized chrF++ is 19-25, well above
+  NLLB's 12-14. So its script gap is about 14 points, a third of NLLB's.
+  Spelling costs it 1 point (lexical L2), similar to NLLB.
+- **Surprisal.**
+  - Romanized text costs Qwen2.5-1.5B about 12-13 extra bits per word, even
+    though its tokenizer handles romanized text far more cheaply (next
+    point). The cost is unfamiliarity, not tokenization. Inconsistent
+    spelling adds 0.4-0.7 bits.
+  - Sarvam-1, an Indic language model, models native script far better
+    (13.5 and 11.9 bits per word, against Qwen's 23.1 and 20.0), and pays a
+    smaller script penalty (8.4-8.7 bits).
+  - It is the model most sensitive to spelling. L3 costs it 1.7 bits per word
+    more than the lexical L2 in both languages, 17% of its total loss. That
+    fits a model that learned romanized text in one convention.
 - **Tokenization.** The script tax runs both ways.
   - General-purpose tokenizers barely know the scripts. Qwen2.5 spends 13.6
     tokens per Malayalam word (10.3 for Tamil) in native script against about
@@ -120,42 +135,51 @@ about 1-12%.
   convention shift the data card warns about, and why the lexical L2 is the
   clean reference for spelling variance.
 
-**Real comments: converting to native script is not a free fix.** Encoders
-fine-tuned on the (mostly romanized) DravidianCodeMix training data do worse
-when the same Latin-script test comments are back-transliterated into native
-script.
+**Real comments: converting to native script is not a free fix.** Every
+classifier did worse when the same Latin-script test comments were
+back-transliterated into native script. That includes the zero-shot LLM, which
+had no task training in either script.
 
 | Classifier | Lang | Macro-F1 typed | Macro-F1 native | AUROC typed | AUROC native |
 |---|---|---|---|---|---|
-| MuRIL | ta | 0.783 | 0.716 | 0.891 | 0.830 |
-| XLM-R | ta | 0.774 | 0.694 | 0.892 | 0.810 |
-| MuRIL | ml | 0.648 | 0.637 | 0.850 | 0.797 |
-| XLM-R | ml | 0.591 | 0.500 | 0.728 | 0.601 |
+| MuRIL, fine-tuned | ta | 0.783 | 0.716 | 0.891 | 0.830 |
+| XLM-R, fine-tuned | ta | 0.774 | 0.694 | 0.892 | 0.810 |
+| Qwen2.5-7B, zero-shot | ta | 0.516 | 0.453 | 0.677 | 0.580 |
+| MuRIL, fine-tuned | ml | 0.648 | 0.637 | 0.850 | 0.797 |
+| XLM-R, fine-tuned | ml | 0.591 | 0.500 | 0.728 | 0.601 |
+| Qwen2.5-7B, zero-shot | ml | 0.575 | 0.543 | 0.725 | 0.720 |
 
-The Tamil drop of 6-10 macro-F1 points holds in every seed of both models. The model has
-learned romanized offensive vocabulary, and back-transliteration moves inputs
-away from it: a Latin-trained model should see Latin text. The Malayalam test
-set has 32 offensive comments, so its macro-F1 is unstable. One XLM-R seed
-collapsed to predicting the majority class. The AUROC drop is consistent in
-direction but should be read with that caveat.
+- **Fine-tuned encoders.** The Tamil drop of 6-10 macro-F1 points holds in
+  every seed of both models. They have learned romanized offensive
+  vocabulary, and back-transliteration moves inputs away from it: a
+  Latin-trained model should see Latin text.
+- **Zero-shot LLM.** Qwen2.5-7B also prefers the comments as typed. On Tamil,
+  AUROC falls from 0.677 to 0.580 after back-transliteration (difference
+  0.097, 95% interval 0.073-0.119). This matches its tokenizer, which spends
+  about 10 tokens on a native Tamil word. It is also a weak offensive-language
+  detector in either script: AUROC 0.68 against 0.89 for the fine-tuned
+  encoders on the same Tamil comments.
+- **Malayalam is too small to be conclusive.** The test set has 32 offensive
+  comments, so its macro-F1 is unstable. One XLM-R seed collapsed to
+  predicting the majority class, and Qwen's Malayalam differences have
+  intervals that include zero. The fine-tuned AUROC drops point the same way
+  as Tamil but should be read with that caveat.
 
-Taken together, the model's familiarity with a script matters more than the
-script itself. Models trained on native script (NLLB, LaBSE, BGE-M3) lose most
-of their competence on romanized input. A model trained on romanized input
-loses competence the other way. Within romanized text, inconsistent spelling
-is a second-order but measurable cost.
+Taken together, a model's familiarity with a script matters more than the
+script itself.
 
-### Not yet run
+- Models trained mainly on native script (NLLB, LaBSE, BGE-M3) lose most of
+  their competence on romanized input; NLLB gives up and copies it.
+- Models that have seen more romanized text lose less. Qwen2.5 translates
+  romanized input at a third of NLLB's script gap, and it and the encoders
+  fine-tuned on romanized comments do *worse* on native script.
+- Within romanized text, inconsistent spelling is a second-order but
+  measurable cost. It is largest for Sarvam-1, whose romanized training is
+  likely the most uniform.
 
-The Qwen2.5-7B-Instruct runs (zero-shot offensive classification and
-translation on the core subset) and Sarvam-1 surprisal are implemented but not
-run. Their weights could not be downloaded in the time available (the network
-fell to under 100 KB/s mid-run). Run them with the corresponding lines of
-`scripts/run_phase2.sh` and regenerate the report. The zero-shot classifier
-matters most of these: it is the one classification measurement not biased
-toward either script by training data.
+### Still pending
 
-The human-typed L3 is also pending. Once responses are collected, the core
+The human-typed L3 is pending. Once responses are collected, the core
 subset lets its gaps be compared directly with the simulated writers'. Since
 simulated writers disagree about 20% less than real annotators, the spelling
 gaps above are likely a lower bound.

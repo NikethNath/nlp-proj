@@ -14,7 +14,7 @@ $PY -m latscript.eval.surprisal
 $PY -m latscript.eval.translate nllb facebook/nllb-200-distilled-600M
 # 1.3B at batch 8 is too slow for the full devtest on an 8 GB GPU.
 $PY -m latscript.eval.translate nllb facebook/nllb-200-distilled-1.3B --subset core --batch-size 8
-$PY -m latscript.eval.translate llm Qwen/Qwen2.5-7B-Instruct --4bit --subset core
+$PY -m latscript.eval.translate llm Qwen/Qwen2.5-7B-Instruct --4bit --subset core --batch-size 8
 $PY -m latscript.eval.classify finetune google/muril-base-cased
 $PY -m latscript.eval.classify finetune FacebookAI/xlm-roberta-base
 $PY -m latscript.eval.classify zeroshot Qwen/Qwen2.5-7B-Instruct --4bit

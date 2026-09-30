@@ -43,9 +43,8 @@ Two steps need people:
 test set, covering tokenization, bitext retrieval, LM surprisal, translation
 into English and offensive-language detection. Methods and findings are in
 [docs/evaluation.md](docs/evaluation.md); the full tables are in
-[docs/phase2_results.md](docs/phase2_results.md). Still to run: the
-Qwen2.5-7B zero-shot and translation runs and Sarvam-1 surprisal (their
-weights did not finish downloading).
+[docs/phase2_results.md](docs/phase2_results.md). The human-typed L3
+comparison waits on the collection.
 
 **Phases 3-4.** Mitigations and write-up have not started.
 
@@ -133,15 +132,20 @@ tests/                         romanizer regressions, collection kit
 - **The script causes most of the loss.** Romanized, top-1 retrieval to
   English falls from ~100% to 31-47%, and NLLB-600M chrF++ from ~57 to ~14.
   NLLB echoes romanized input back untranslated 70-80% of the time.
+- **How much depends on the model's familiarity with the script.** Qwen2.5-7B
+  translates native script worse than NLLB but actually translates romanized
+  input, so its script gap is about 14 chrF++ points, a third of NLLB's.
 - **Inconsistent spelling adds a smaller, reliable penalty.** Against the
-  lexical L2 it is 1-12% of the total loss: 6-10 points of retrieval accuracy,
-  0.4-0.7 bits per word of surprisal.
+  lexical L2 it is 1-17% of the total loss: 6-10 points of retrieval
+  accuracy, 0.4-1.7 bits per word of surprisal. The Indic LM Sarvam-1 is the
+  most spelling-sensitive.
 - **The script tax runs both ways.** Qwen2.5's tokenizer spends about 3x more
   tokens on native-script Malayalam than on romanized text; Indic tokenizers
   spend 40-120% more on romanized text.
 - **Back-transliteration is not a free fix.** Classifiers fine-tuned on real
   romanized comments lose 6-10 macro-F1 points on Tamil when the same comments
-  are converted to native script.
+  are converted to native script. Zero-shot Qwen2.5-7B, with no task
+  training, also drops from AUROC 0.68 to 0.58.
 
 **Spelling in the source data**
 - **Real spelling is inconsistent.** Two Dakshina annotators spell the same

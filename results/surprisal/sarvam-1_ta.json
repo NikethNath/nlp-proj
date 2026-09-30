@@ -1,0 +1,84 @@
+{
+ "model": "sarvamai/sarvam-1",
+ "lang": "ta",
+ "n": 1012,
+ "unit": "bits per native word",
+ "bits_per_word": {
+  "n": 1012,
+  "higher_is_better": false,
+  "levels": {
+   "l1": {
+    "score": 11.9191,
+    "ci": [
+     11.767,
+     12.0666
+    ]
+   },
+   "l2_canonical": {
+    "score": 21.9151,
+    "ci": [
+     21.7337,
+     22.1177
+    ]
+   },
+   "l2_lexical": {
+    "score": 20.6148,
+    "ci": [
+     20.4075,
+     20.8227
+    ]
+   },
+   "l3": {
+    "score": 22.3337,
+    "ci": [
+     22.1338,
+     22.533
+    ]
+   }
+  },
+  "l3_writers": [
+   22.5741,
+   21.95,
+   22.4426,
+   22.3732,
+   22.3285
+  ],
+  "gaps": {
+   "total": {
+    "loss": 10.4146,
+    "ci": [
+     10.2553,
+     10.5638
+    ]
+   },
+   "script_canonical": {
+    "loss": 9.996,
+    "ci": [
+     9.8276,
+     10.1592
+    ]
+   },
+   "spelling_canonical": {
+    "loss": 0.4186,
+    "ci": [
+     0.2979,
+     0.535
+    ]
+   },
+   "script_lexical": {
+    "loss": 8.6957,
+    "ci": [
+     8.5313,
+     8.8504
+    ]
+   },
+   "spelling_lexical": {
+    "loss": 1.7189,
+    "ci": [
+     1.6357,
+     1.8066
+    ]
+   }
+  }
+ }
+}

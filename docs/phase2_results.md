@@ -24,6 +24,8 @@ Share of outputs that echo the input instead of translating it (normalized edit 
 
 | Model | Lang | L1 | L2 canonical | L2 lexical | L3 (writer range) | Script gap (canonical) | Spelling gap (canonical) | Script gap (lexical) | Spelling gap (lexical) | Spelling share (can. / lex.) |
 |---|---|---|---|---|---|---|---|---|---|---|
+| Qwen2.5-7B-Instruct | ml | 37.9 | 24.2 | 24.8 | 23.7 (23.3-24.1) | 13.7 [12.2, 15.3] | 0.5 [-0.2, 1.2] | 13.2 [11.8, 14.5] | 1.1 [0.5, 1.8] | 4% / 8% |
+| Qwen2.5-7B-Instruct | ta | 33.8 | 20.1 | 19.8 | 19.0 (18.7-19.1) | 13.6 [12.1, 15.1] | 1.2 [0.6, 1.7] | 13.9 [12.5, 15.3] | 0.9 [0.4, 1.3] | 8% / 6% |
 | nllb-200-distilled-1.3B | ml | 59.9 | 16.9 | 16.6 | 15.4 (15.1-15.8) | 43.0 [41.2, 44.8] | 1.5 [1.0, 2.0] | 43.3 [41.6, 45.0] | 1.3 [0.8, 1.7] | 3% / 3% |
 | nllb-200-distilled-1.3B | ta | 57.6 | 15.6 | 15.2 | 14.8 (14.5-15.0) | 42.0 [40.2, 43.7] | 0.7 [0.3, 1.2] | 42.3 [40.5, 44.0] | 0.4 [0.1, 0.7] | 2% / 1% |
 | nllb-200-distilled-600M | ml | 57.9 | 13.9 | 13.4 | 12.5 (12.3-12.7) | 44.1 [42.2, 45.8] | 1.4 [0.8, 1.9] | 44.6 [42.7, 46.3] | 0.8 [0.4, 1.3] | 3% / 2% |
@@ -35,6 +37,8 @@ Share of outputs that echo the input instead of translating it (normalized edit 
 
 | Model | Lang | L1 | L2 canonical | L2 lexical | L3 |
 |---|---|---|---|---|---|
+| Qwen2.5-7B-Instruct | ml | 0.0% | 0.4% | 0.0% | 0.2% |
+| Qwen2.5-7B-Instruct | ta | 0.0% | 2.4% | 2.8% | 2.9% |
 | nllb-200-distilled-1.3B | ml | 0.0% | 62.5% | 55.6% | 51.8% |
 | nllb-200-distilled-1.3B | ta | 0.0% | 72.6% | 72.2% | 69.2% |
 | nllb-200-distilled-600M | ml | 0.0% | 66.9% | 63.7% | 60.7% |
@@ -66,6 +70,8 @@ Cosine similarity of each condition to the native-script sentence:
 |---|---|---|---|---|---|---|---|---|---|---|
 | Qwen2.5-1.5B | ml | 23.1 | 35.4 | 35.4 | 36.1 (35.7-36.6) | 12.2 [12.0, 12.5] | 0.7 [0.6, 0.8] | 12.3 [12.0, 12.5] | 0.7 [0.6, 0.8] | 5% / 5% |
 | Qwen2.5-1.5B | ta | 20.0 | 33.4 | 32.7 | 33.1 (33.0-33.2) | 13.4 [13.2, 13.6] | -0.4 [-0.5, -0.3] | 12.7 [12.5, 12.9] | 0.4 [0.3, 0.4] | -3% / 3% |
+| sarvam-1 | ml | 13.5 | 22.4 | 21.9 | 23.7 (23.5-23.8) | 8.9 [8.7, 9.1] | 1.3 [1.2, 1.4] | 8.4 [8.2, 8.6] | 1.7 [1.7, 1.8] | 13% / 17% |
+| sarvam-1 | ta | 11.9 | 21.9 | 20.6 | 22.3 (21.9-22.6) | 10.0 [9.8, 10.2] | 0.4 [0.3, 0.5] | 8.7 [8.5, 8.9] | 1.7 [1.6, 1.8] | 4% / 17% |
 
 Unit: total sentence negative log-likelihood in bits / native words (lower is better, so gaps are extra bits). n = 1012 sentences per language.
 
@@ -106,5 +112,9 @@ Latin-script, in-language test comments, scored as typed and after IndicXlit bac
 | xlm-roberta-base (fine-tuned) | ml | 1023 (32) | auroc | 0.728 | 0.601 | +0.128 (seeds +0.105 to +0.172) |
 | xlm-roberta-base (fine-tuned) | ta | 3418 (869) | macro_f1 | 0.774 | 0.694 | +0.080 (seeds +0.062 to +0.103) |
 | xlm-roberta-base (fine-tuned) | ta | 3418 (869) | auroc | 0.892 | 0.810 | +0.082 (seeds +0.073 to +0.089) |
+| Qwen2.5-7B-Instruct (zero-shot) | ml | 1023 (32) | macro_f1 | 0.575 | 0.543 | +0.032 [-0.023, +0.084] |
+| Qwen2.5-7B-Instruct (zero-shot) | ml | 1023 (32) | auroc | 0.725 | 0.720 | +0.005 [-0.063, +0.071] |
+| Qwen2.5-7B-Instruct (zero-shot) | ta | 3418 (869) | macro_f1 | 0.516 | 0.453 | +0.063 [+0.045, +0.080] |
+| Qwen2.5-7B-Instruct (zero-shot) | ta | 3418 (869) | auroc | 0.677 | 0.580 | +0.097 [+0.073, +0.119] |
 
 Fine-tuned rows average over seeds; the range is the per-seed difference.

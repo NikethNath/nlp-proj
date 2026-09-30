@@ -150,7 +150,11 @@ ZS_PROMPT = ("Here is a YouTube comment in {language}. It may be written in {lan
              "Answer with one word: Yes or No.")
 
 
-def run_zeroshot(name: str, lang: str, four_bit: bool, batch_size: int = 8) -> dict:
+MAX_COMMENT_TOKENS = 384
+TOKEN_BUDGET = 2048
+
+
+def run_zeroshot(name: str, lang: str, four_bit: bool, batch_size: int = 16) -> dict:
     import torch
     from .translate import ChatLLM
 
@@ -159,13 +163,31 @@ def run_zeroshot(name: str, lang: str, four_bit: bool, batch_size: int = 8) -> d
     yes = [tok.encode(w, add_special_tokens=False)[0] for w in ("Yes", " Yes", "yes")]
     no = [tok.encode(w, add_special_tokens=False)[0] for w in ("No", " No", "no")]
 
-    def score(texts: list[str]) -> tuple[np.ndarray, np.ndarray]:
-        probs = []
-        for s in range(0, len(texts), batch_size):
-            chats = [tok.apply_chat_template(
-                [{"role": "user", "content": ZS_PROMPT.format(language=LANG_NAME[lang], text=t)}],
-                tokenize=False, add_generation_prompt=True) for t in texts[s:s + batch_size]]
-            enc = tok(chats, return_tensors="pt", padding=True, add_special_tokens=False).to("cuda")
+    def prompt(text: str) -> str:
+        # Native script costs Qwen ~10 tokens per word, so a few very long
+        # comments would dominate memory; keep the first MAX_COMMENT_TOKENS.
+        ids = tok(text, add_special_tokens=False)["input_ids"]
+        if len(ids) > MAX_COMMENT_TOKENS:
+            text = tok.decode(ids[:MAX_COMMENT_TOKENS])
+        return tok.apply_chat_template(
+            [{"role": "user", "content": ZS_PROMPT.format(language=LANG_NAME[lang], text=text)}],
+            tokenize=False, add_generation_prompt=True)
+
+    def score(texts: list[str], label: str) -> tuple[np.ndarray, np.ndarray]:
+        chats = [prompt(t) for t in texts]
+        lengths = [len(tok(c, add_special_tokens=False)["input_ids"]) for c in chats]
+        # Batch by length, so padding stays small, under a token budget per batch.
+        order = sorted(range(len(chats)), key=lambda i: lengths[i])
+        batches, cur = [], []
+        for i in order:
+            if cur and (len(cur) + 1) * lengths[i] > TOKEN_BUDGET or len(cur) == batch_size:
+                batches.append(cur); cur = []
+            cur.append(i)
+        batches.append(cur)
+        p = np.zeros(len(chats))
+        for b, idx in enumerate(batches):
+            enc = tok([chats[i] for i in idx], return_tensors="pt", padding=True,
+                      add_special_tokens=False).to("cuda")
             with torch.inference_mode():
                 # Only the next-token distribution is needed; full-sequence
                 # logits would not fit on the GPU next to the 7B model.
@@ -173,15 +195,18 @@ def run_zeroshot(name: str, lang: str, four_bit: bool, batch_size: int = 8) -> d
             lp = torch.log_softmax(logits, -1)
             p_yes = torch.logsumexp(lp[:, yes], -1).exp()
             p_no = torch.logsumexp(lp[:, no], -1).exp()
-            probs.append((p_yes / (p_yes + p_no)).cpu().numpy())
-        p = np.concatenate(probs)
+            p[idx] = (p_yes / (p_yes + p_no)).cpu().numpy()
+            if b % 20 == 0 or b == len(batches) - 1:
+                print(f"\r  {lang} {label}: {b + 1}/{len(batches)} batches", end="", flush=True)
+        print()
         return (p > 0.5).astype(int), p
 
     rows = eval_set(lang)
     y = np.array([int(c["offensive"]) for c in rows])
-    tp, ts = score([c["text"] for c in rows])
-    np_, ns = score([c["l1_backtranslit"] for c in rows])
+    tp, ts = score([c["text"] for c in rows], "typed")
+    np_, ns = score([c["l1_backtranslit"] for c in rows], "native")
     return {"kind": "zeroshot", "model": name, "lang": lang, "n": len(y),
+            "max_comment_tokens": MAX_COMMENT_TOKENS,
             "offensive": int(y.sum()), "a": "typed (Latin)", "b": "back-transliterated (native)",
             "yes_rate": {"a": round(float(tp.mean()), 4), "b": round(float(np_.mean()), 4)},
             **compare(y, {"pred": tp, "score": ts}, {"pred": np_, "score": ns})}
