@@ -39,7 +39,14 @@ Two steps need people:
 - the hand check of 50 sentences ([review/README.md](review/README.md));
 - collecting the human-written subset ([collection/README.md](collection/README.md)).
 
-**Phases 2-4.** Model evaluation, mitigations and write-up have not started.
+**Phase 2 (model evaluation).** Run on FLORES devtest and the DravidianCodeMix
+test set, covering tokenization, bitext retrieval, LM surprisal, translation
+into English and offensive-language detection. Methods and findings are in
+[docs/evaluation.md](docs/evaluation.md); the full tables are in
+[docs/phase2_results.md](docs/phase2_results.md). The human-typed L3
+comparison waits on the collection.
+
+**Phases 3-4.** Mitigations and write-up have not started.
 
 ## Setup
 
@@ -66,6 +73,21 @@ export PYTHONPATH=src
 .venv/bin/python -m pytest tests/
 ```
 
+## Evaluating (Phase 2)
+
+Needs a CUDA GPU (8 GB is enough) and the built corpus.
+
+```bash
+.venv/bin/pip install torch --index-url https://download.pytorch.org/whl/cu128
+.venv/bin/pip install -r requirements-eval.txt
+scripts/run_phase2.sh                         # every evaluation, then the report
+.venv/bin/python -m latscript.eval.report     # docs/phase2_results.md from results/
+```
+
+Each step can also be run on its own, for example
+`python -m latscript.eval.translate nllb facebook/nllb-200-distilled-600M`.
+Model outputs are cached in `data/eval`, so interrupted runs resume.
+
 The first build runs IndicXlit over about 30k FLORES words and 23k comment
 words, roughly 10 minutes on CPU. Later builds take about a minute.
 
@@ -88,6 +110,15 @@ src/latscript/
   human/analyze.py             inter-writer divergence, human vs simulated L3
   corpus_stats.py              statistics for the data card
   review.py                    hand-check sheet export
+  eval/conditions.py           the eight inputs per sentence, data loading
+  eval/stats.py                script/spelling decomposition, paired bootstrap
+  eval/tokenization.py         tokens per word under each orthography
+  eval/retrieval.py            bitext retrieval with sentence encoders
+  eval/surprisal.py            sentence negative log-likelihood under causal LMs
+  eval/translate.py            translation into English, chrF++, copy rate
+  eval/classify.py             DravidianCodeMix: fine-tuned and zero-shot, typed vs native
+  eval/report.py               results/ -> docs/phase2_results.md
+results/                       Phase 2 summaries, one JSON per task, model and language
 collection/                    manifest, form script, collection protocol
 review/                        hand-check sheets and instructions
 docs/                          data card and corpus statistics
@@ -96,6 +127,25 @@ tests/                         romanizer regressions, collection kit
 ```
 
 ## Findings so far
+
+**Model evaluation**
+- **The script causes most of the loss.** Romanized, top-1 retrieval to
+  English falls from ~100% to 31-47%, and NLLB-600M chrF++ from ~57 to ~14.
+  NLLB echoes romanized input back untranslated 70-80% of the time.
+- **How much depends on the model's familiarity with the script.** Qwen2.5-7B
+  translates native script worse than NLLB but actually translates romanized
+  input, so its script gap is about 14 chrF++ points, a third of NLLB's.
+- **Inconsistent spelling adds a smaller, reliable penalty.** Against the
+  lexical L2 it is 1-17% of the total loss: 6-10 points of retrieval
+  accuracy, 0.4-1.7 bits per word of surprisal. The Indic LM Sarvam-1 is the
+  most spelling-sensitive.
+- **The script tax runs both ways.** Qwen2.5's tokenizer spends about 3x more
+  tokens on native-script Malayalam than on romanized text; Indic tokenizers
+  spend 40-120% more on romanized text.
+- **Back-transliteration is not a free fix.** Classifiers fine-tuned on real
+  romanized comments lose 6-10 macro-F1 points on Tamil when the same comments
+  are converted to native script. Zero-shot Qwen2.5-7B, with no task
+  training, also drops from AUROC 0.68 to 0.58.
 
 **Spelling in the source data**
 - **Real spelling is inconsistent.** Two Dakshina annotators spell the same

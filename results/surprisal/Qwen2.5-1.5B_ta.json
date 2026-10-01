@@ -1,0 +1,84 @@
+{
+ "model": "Qwen/Qwen2.5-1.5B",
+ "lang": "ta",
+ "n": 1012,
+ "unit": "bits per native word",
+ "bits_per_word": {
+  "n": 1012,
+  "higher_is_better": false,
+  "levels": {
+   "l1": {
+    "score": 20.0454,
+    "ci": [
+     19.8661,
+     20.2309
+    ]
+   },
+   "l2_canonical": {
+    "score": 33.4396,
+    "ci": [
+     33.1887,
+     33.6942
+    ]
+   },
+   "l2_lexical": {
+    "score": 32.7096,
+    "ci": [
+     32.4581,
+     32.9702
+    ]
+   },
+   "l3": {
+    "score": 33.0634,
+    "ci": [
+     32.8247,
+     33.317
+    ]
+   }
+  },
+  "l3_writers": [
+   33.0529,
+   33.0806,
+   33.0341,
+   33.1829,
+   32.9666
+  ],
+  "gaps": {
+   "total": {
+    "loss": 13.018,
+    "ci": [
+     12.829,
+     13.2015
+    ]
+   },
+   "script_canonical": {
+    "loss": 13.3942,
+    "ci": [
+     13.1734,
+     13.6137
+    ]
+   },
+   "spelling_canonical": {
+    "loss": -0.3762,
+    "ci": [
+     -0.4617,
+     -0.2949
+    ]
+   },
+   "script_lexical": {
+    "loss": 12.6642,
+    "ci": [
+     12.459,
+     12.8608
+    ]
+   },
+   "spelling_lexical": {
+    "loss": 0.3538,
+    "ci": [
+     0.2909,
+     0.41
+    ]
+   }
+  }
+ }
+}

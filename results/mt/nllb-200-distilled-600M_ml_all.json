@@ -1,0 +1,88 @@
+{
+ "model": "facebook/nllb-200-distilled-600M",
+ "lang": "ml",
+ "subset": "all",
+ "metric": "chrF++",
+ "n": 1012,
+ "higher_is_better": true,
+ "levels": {
+  "l1": {
+   "score": 59.1241,
+   "ci": [
+    58.3299,
+    59.9728
+   ]
+  },
+  "l2_canonical": {
+   "score": 15.2663,
+   "ci": [
+    14.9313,
+    15.6175
+   ]
+  },
+  "l2_lexical": {
+   "score": 14.8803,
+   "ci": [
+    14.544,
+    15.2703
+   ]
+  },
+  "l3": {
+   "score": 13.7146,
+   "ci": [
+    13.4964,
+    13.9512
+   ]
+  }
+ },
+ "l3_writers": [
+  13.6772,
+  13.6891,
+  13.6744,
+  13.9318,
+  13.6003
+ ],
+ "gaps": {
+  "total": {
+   "loss": 45.4095,
+   "ci": [
+    44.6213,
+    46.2512
+   ]
+  },
+  "script_canonical": {
+   "loss": 43.8578,
+   "ci": [
+    43.0567,
+    44.7097
+   ]
+  },
+  "spelling_canonical": {
+   "loss": 1.5517,
+   "ci": [
+    1.285,
+    1.8151
+   ]
+  },
+  "script_lexical": {
+   "loss": 44.2438,
+   "ci": [
+    43.4371,
+    45.0755
+   ]
+  },
+  "spelling_lexical": {
+   "loss": 1.1657,
+   "ci": [
+    0.9176,
+    1.4156
+   ]
+  }
+ },
+ "copy_rate": {
+  "l1": 0.0,
+  "l2_canonical": 0.7431,
+  "l2_lexical": 0.7342,
+  "l3": 0.704
+ }
+}

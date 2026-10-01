@@ -1,0 +1,160 @@
+{
+ "tokenizer": "google/muril-base-cased",
+ "lang": "ml",
+ "fertility": {
+  "n": 1012,
+  "higher_is_better": false,
+  "levels": {
+   "l1": {
+    "score": 2.2208,
+    "ci": [
+     2.1952,
+     2.2458
+    ]
+   },
+   "l2_canonical": {
+    "score": 3.3981,
+    "ci": [
+     3.3688,
+     3.4299
+    ]
+   },
+   "l2_lexical": {
+    "score": 3.4432,
+    "ci": [
+     3.4143,
+     3.4741
+    ]
+   },
+   "l3": {
+    "score": 3.5027,
+    "ci": [
+     3.4763,
+     3.5319
+    ]
+   }
+  },
+  "l3_writers": [
+   3.5045,
+   3.4673,
+   3.5588,
+   3.4523,
+   3.5308
+  ],
+  "gaps": {
+   "total": {
+    "loss": 1.282,
+    "ci": [
+     1.2598,
+     1.3055
+    ]
+   },
+   "script_canonical": {
+    "loss": 1.1773,
+    "ci": [
+     1.1509,
+     1.2032
+    ]
+   },
+   "spelling_canonical": {
+    "loss": 0.1047,
+    "ci": [
+     0.0935,
+     0.1153
+    ]
+   },
+   "script_lexical": {
+    "loss": 1.2225,
+    "ci": [
+     1.1977,
+     1.2484
+    ]
+   },
+   "spelling_lexical": {
+    "loss": 0.0595,
+    "ci": [
+     0.051,
+     0.068
+    ]
+   }
+  }
+ },
+ "unk_word_share": {
+  "n": 1012,
+  "higher_is_better": false,
+  "levels": {
+   "l1": {
+    "score": 0.0,
+    "ci": [
+     0.0,
+     0.0
+    ]
+   },
+   "l2_canonical": {
+    "score": 0.0,
+    "ci": [
+     0.0,
+     0.0
+    ]
+   },
+   "l2_lexical": {
+    "score": 0.0,
+    "ci": [
+     0.0,
+     0.0
+    ]
+   },
+   "l3": {
+    "score": 0.0,
+    "ci": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "l3_writers": [
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "gaps": {
+   "total": {
+    "loss": -0.0,
+    "ci": [
+     -0.0,
+     0.0
+    ]
+   },
+   "script_canonical": {
+    "loss": -0.0,
+    "ci": [
+     -0.0,
+     0.0
+    ]
+   },
+   "spelling_canonical": {
+    "loss": -0.0,
+    "ci": [
+     -0.0,
+     0.0
+    ]
+   },
+   "script_lexical": {
+    "loss": -0.0,
+    "ci": [
+     -0.0,
+     0.0
+    ]
+   },
+   "spelling_lexical": {
+    "loss": -0.0,
+    "ci": [
+     -0.0,
+     0.0
+    ]
+   }
+  }
+ }
+}

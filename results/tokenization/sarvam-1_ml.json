@@ -1,0 +1,160 @@
+{
+ "tokenizer": "sarvamai/sarvam-1",
+ "lang": "ml",
+ "fertility": {
+  "n": 1012,
+  "higher_is_better": false,
+  "levels": {
+   "l1": {
+    "score": 2.8982,
+    "ci": [
+     2.8643,
+     2.931
+    ]
+   },
+   "l2_canonical": {
+    "score": 5.0953,
+    "ci": [
+     5.0467,
+     5.1434
+    ]
+   },
+   "l2_lexical": {
+    "score": 5.1808,
+    "ci": [
+     5.1345,
+     5.2277
+    ]
+   },
+   "l3": {
+    "score": 5.2239,
+    "ci": [
+     5.1814,
+     5.2675
+    ]
+   }
+  },
+  "l3_writers": [
+   5.2503,
+   5.1746,
+   5.3076,
+   5.1192,
+   5.2679
+  ],
+  "gaps": {
+   "total": {
+    "loss": 2.3258,
+    "ci": [
+     2.2824,
+     2.3649
+    ]
+   },
+   "script_canonical": {
+    "loss": 2.1972,
+    "ci": [
+     2.1494,
+     2.2382
+    ]
+   },
+   "spelling_canonical": {
+    "loss": 0.1286,
+    "ci": [
+     0.1157,
+     0.1419
+    ]
+   },
+   "script_lexical": {
+    "loss": 2.2826,
+    "ci": [
+     2.2358,
+     2.3241
+    ]
+   },
+   "spelling_lexical": {
+    "loss": 0.0431,
+    "ci": [
+     0.0325,
+     0.0538
+    ]
+   }
+  }
+ },
+ "unk_word_share": {
+  "n": 1012,
+  "higher_is_better": false,
+  "levels": {
+   "l1": {
+    "score": 0.0,
+    "ci": [
+     0.0,
+     0.0
+    ]
+   },
+   "l2_canonical": {
+    "score": 0.0,
+    "ci": [
+     0.0,
+     0.0
+    ]
+   },
+   "l2_lexical": {
+    "score": 0.0,
+    "ci": [
+     0.0,
+     0.0
+    ]
+   },
+   "l3": {
+    "score": 0.0,
+    "ci": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "l3_writers": [
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "gaps": {
+   "total": {
+    "loss": -0.0,
+    "ci": [
+     -0.0,
+     0.0
+    ]
+   },
+   "script_canonical": {
+    "loss": -0.0,
+    "ci": [
+     -0.0,
+     0.0
+    ]
+   },
+   "spelling_canonical": {
+    "loss": -0.0,
+    "ci": [
+     -0.0,
+     0.0
+    ]
+   },
+   "script_lexical": {
+    "loss": -0.0,
+    "ci": [
+     -0.0,
+     0.0
+    ]
+   },
+   "spelling_lexical": {
+    "loss": -0.0,
+    "ci": [
+     -0.0,
+     0.0
+    ]
+   }
+  }
+ }
+}

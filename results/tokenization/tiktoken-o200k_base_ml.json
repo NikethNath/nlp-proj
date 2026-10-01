@@ -1,0 +1,82 @@
+{
+ "tokenizer": "tiktoken:o200k_base",
+ "lang": "ml",
+ "fertility": {
+  "n": 1012,
+  "higher_is_better": false,
+  "levels": {
+   "l1": {
+    "score": 3.5752,
+    "ci": [
+     3.5422,
+     3.6064
+    ]
+   },
+   "l2_canonical": {
+    "score": 3.8264,
+    "ci": [
+     3.7912,
+     3.8624
+    ]
+   },
+   "l2_lexical": {
+    "score": 3.8669,
+    "ci": [
+     3.8324,
+     3.9026
+    ]
+   },
+   "l3": {
+    "score": 3.9152,
+    "ci": [
+     3.8831,
+     3.9498
+    ]
+   }
+  },
+  "l3_writers": [
+   3.9298,
+   3.8862,
+   3.9817,
+   3.8357,
+   3.9426
+  ],
+  "gaps": {
+   "total": {
+    "loss": 0.34,
+    "ci": [
+     0.3126,
+     0.3684
+    ]
+   },
+   "script_canonical": {
+    "loss": 0.2512,
+    "ci": [
+     0.2199,
+     0.2822
+    ]
+   },
+   "spelling_canonical": {
+    "loss": 0.0888,
+    "ci": [
+     0.078,
+     0.0992
+    ]
+   },
+   "script_lexical": {
+    "loss": 0.2917,
+    "ci": [
+     0.2611,
+     0.322
+    ]
+   },
+   "spelling_lexical": {
+    "loss": 0.0483,
+    "ci": [
+     0.0401,
+     0.0569
+    ]
+   }
+  }
+ }
+}

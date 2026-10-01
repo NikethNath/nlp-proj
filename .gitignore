@@ -10,4 +10,5 @@ data/raw/
 # Generated - rebuilt from source data (see README)
 data/derived/
 data/cache/
+data/eval/
 dist/

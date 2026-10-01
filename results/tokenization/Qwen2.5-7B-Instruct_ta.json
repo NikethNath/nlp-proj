@@ -1,0 +1,82 @@
+{
+ "tokenizer": "Qwen/Qwen2.5-7B-Instruct",
+ "lang": "ta",
+ "fertility": {
+  "n": 1012,
+  "higher_is_better": false,
+  "levels": {
+   "l1": {
+    "score": 10.2768,
+    "ci": [
+     10.2087,
+     10.3416
+    ]
+   },
+   "l2_canonical": {
+    "score": 4.1569,
+    "ci": [
+     4.1249,
+     4.1869
+    ]
+   },
+   "l2_lexical": {
+    "score": 4.1042,
+    "ci": [
+     4.0717,
+     4.1353
+    ]
+   },
+   "l3": {
+    "score": 4.1243,
+    "ci": [
+     4.0938,
+     4.1532
+    ]
+   }
+  },
+  "l3_writers": [
+   4.1231,
+   4.0925,
+   4.1282,
+   4.1389,
+   4.1388
+  ],
+  "gaps": {
+   "total": {
+    "loss": -6.1525,
+    "ci": [
+     -6.1956,
+     -6.1053
+    ]
+   },
+   "script_canonical": {
+    "loss": -6.12,
+    "ci": [
+     -6.1654,
+     -6.0713
+    ]
+   },
+   "spelling_canonical": {
+    "loss": -0.0326,
+    "ci": [
+     -0.0423,
+     -0.0234
+    ]
+   },
+   "script_lexical": {
+    "loss": -6.1727,
+    "ci": [
+     -6.2159,
+     -6.126
+    ]
+   },
+   "spelling_lexical": {
+    "loss": 0.0201,
+    "ci": [
+     0.0126,
+     0.0275
+    ]
+   }
+  }
+ }
+}

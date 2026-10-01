@@ -1,0 +1,15 @@
+# Phase 2 model evaluation. Install torch for your CUDA first, e.g. for
+# Blackwell GPUs:  pip install torch --index-url https://download.pytorch.org/whl/cu128
+-r requirements.txt
+pandas
+pyarrow
+numpy
+transformers>=5
+accelerate
+bitsandbytes
+sentencepiece
+protobuf
+tiktoken
+sacrebleu>=2.4
+sentence-transformers
+scikit-learn

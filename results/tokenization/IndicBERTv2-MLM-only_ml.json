@@ -1,0 +1,160 @@
+{
+ "tokenizer": "ai4bharat/IndicBERTv2-MLM-only",
+ "lang": "ml",
+ "fertility": {
+  "n": 1012,
+  "higher_is_better": false,
+  "levels": {
+   "l1": {
+    "score": 2.0318,
+    "ci": [
+     2.0123,
+     2.0521
+    ]
+   },
+   "l2_canonical": {
+    "score": 2.9059,
+    "ci": [
+     2.8843,
+     2.9275
+    ]
+   },
+   "l2_lexical": {
+    "score": 2.9644,
+    "ci": [
+     2.9412,
+     2.9861
+    ]
+   },
+   "l3": {
+    "score": 3.0535,
+    "ci": [
+     3.0332,
+     3.0741
+    ]
+   }
+  },
+  "l3_writers": [
+   3.0314,
+   3.0687,
+   3.0729,
+   3.0376,
+   3.057
+  ],
+  "gaps": {
+   "total": {
+    "loss": 1.0218,
+    "ci": [
+     1.0036,
+     1.0408
+    ]
+   },
+   "script_canonical": {
+    "loss": 0.8742,
+    "ci": [
+     0.8547,
+     0.8952
+    ]
+   },
+   "spelling_canonical": {
+    "loss": 0.1476,
+    "ci": [
+     0.1369,
+     0.1581
+    ]
+   },
+   "script_lexical": {
+    "loss": 0.9326,
+    "ci": [
+     0.9126,
+     0.9524
+    ]
+   },
+   "spelling_lexical": {
+    "loss": 0.0891,
+    "ci": [
+     0.0807,
+     0.0977
+    ]
+   }
+  }
+ },
+ "unk_word_share": {
+  "n": 1012,
+  "higher_is_better": false,
+  "levels": {
+   "l1": {
+    "score": 0.0,
+    "ci": [
+     0.0,
+     0.0
+    ]
+   },
+   "l2_canonical": {
+    "score": 0.0,
+    "ci": [
+     0.0,
+     0.0
+    ]
+   },
+   "l2_lexical": {
+    "score": 0.0,
+    "ci": [
+     0.0,
+     0.0
+    ]
+   },
+   "l3": {
+    "score": 0.0,
+    "ci": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "l3_writers": [
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "gaps": {
+   "total": {
+    "loss": -0.0,
+    "ci": [
+     -0.0,
+     0.0
+    ]
+   },
+   "script_canonical": {
+    "loss": -0.0,
+    "ci": [
+     -0.0,
+     0.0
+    ]
+   },
+   "spelling_canonical": {
+    "loss": -0.0,
+    "ci": [
+     -0.0,
+     0.0
+    ]
+   },
+   "script_lexical": {
+    "loss": -0.0,
+    "ci": [
+     -0.0,
+     0.0
+    ]
+   },
+   "spelling_lexical": {
+    "loss": -0.0,
+    "ci": [
+     -0.0,
+     0.0
+    ]
+   }
+  }
+ }
+}
