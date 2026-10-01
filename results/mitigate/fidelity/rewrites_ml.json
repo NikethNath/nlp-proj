@@ -1,0 +1,30 @@
+{
+ "lang": "ml",
+ "backtranslit": {
+  "l2_canonical": {
+   "word_accuracy": 0.8305,
+   "aligned_words": 14191,
+   "sentence_ned_to_l1": 0.0317
+  },
+  "l2_lexical": {
+   "word_accuracy": 0.7932,
+   "aligned_words": 14191,
+   "sentence_ned_to_l1": 0.035
+  },
+  "l3": {
+   "word_accuracy": 0.7111,
+   "aligned_words": 70922,
+   "sentence_ned_to_l1": 0.0534
+  }
+ },
+ "roundtrip": {
+  "l3_writer_pair_word_disagreement": {
+   "before": 0.4301,
+   "after": 0.2361
+  },
+  "l3_vs_l2_canonical_word_disagreement": {
+   "before": 0.5152,
+   "after": 0.2193
+  }
+ }
+}

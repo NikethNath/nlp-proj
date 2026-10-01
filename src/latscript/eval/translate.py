@@ -24,8 +24,8 @@ import re
 
 import numpy as np
 
-from .conditions import (CONDITIONS, EVAL_OUT, LANG_NAME, LANGS, RESULTS, append_jsonl,
-                         load_rows, read_jsonl, slug, texts, write_json)
+from .conditions import (CONDITIONS, EVAL_OUT, LANG_NAME, LANGS, VARIANTS, append_jsonl,
+                         load_rows, read_jsonl, results_dir, slug, tag, texts, write_json)
 from ..translit.distance import normalized_edit_distance
 from .stats import as_mean_stats, decompose, level_scores, mean_metric
 
@@ -115,12 +115,21 @@ def clean(output: str) -> str:
 
 # --------------------------------------------------------------------------- run
 
-def run(model, model_name: str, lang: str, rows: list[dict]) -> list[dict]:
-    """Translate every (row, condition) not already cached; return all cached hypotheses."""
+def run(model, model_name: str, lang: str, rows: list[dict],
+        variant: str | None = None) -> dict[tuple[str, str], str]:
+    """Translate every input not already cached; return (id, source) -> hypothesis.
+
+    The cache is keyed by source text, so Phase 3 variants reuse the L1
+    translations and any rewritten input that happens to equal one already done.
+    """
     path = EVAL_OUT / "mt" / f"{slug(model_name)}_{lang}.jsonl"
-    done = {(h["id"], h["condition"]) for h in read_jsonl(path)}
-    todo = [(r["id"], cond, text) for r in rows for cond, text in texts(r).items()
-            if (r["id"], cond) not in done]
+    done = {(h["id"], h["source"]) for h in read_jsonl(path)}
+    todo, seen = [], set()
+    for r in rows:
+        for cond, text in texts(r, variant).items():
+            if (r["id"], text) not in done and (r["id"], text) not in seen:
+                seen.add((r["id"], text))
+                todo.append((r["id"], cond, text))
     # Longest first, so the batch that runs out of memory is the first one.
     todo.sort(key=lambda x: -len(x[2]))
     for start in range(0, len(todo), model.batch_size):
@@ -131,7 +140,7 @@ def run(model, model_name: str, lang: str, rows: list[dict]) -> list[dict]:
         print(f"\r  {lang}: {min(start + model.batch_size, len(todo))}/{len(todo)}", end="", flush=True)
     if todo:
         print()
-    return read_jsonl(path)
+    return {(h["id"], h["source"]): h["hyp"] for h in read_jsonl(path)}
 
 
 def is_copy(source: str, hyp: str, threshold: float = 0.3) -> bool:
@@ -140,11 +149,12 @@ def is_copy(source: str, hyp: str, threshold: float = 0.3) -> bool:
     return bool(a) and normalized_edit_distance(a, b) < threshold
 
 
-def score(hyps: list[dict], rows: list[dict]) -> dict:
-    by_key = {(h["id"], h["condition"]): h["hyp"] for h in hyps}
+def score(hyps: dict[tuple[str, str], str], rows: list[dict], variant: str | None = None) -> dict:
+    src = [texts(r, variant) for r in rows]
+    hyp = {cond: [hyps[(r["id"], s[cond])] for r, s in zip(rows, src)] for cond in CONDITIONS}
     refs = [r["english"] for r in rows]
-    stats = {cond: chrf_stats([by_key[(r["id"], cond)] for r in rows], refs) for cond in CONDITIONS}
-    copies = {cond: as_mean_stats([is_copy(texts(r)[cond], by_key[(r["id"], cond)]) for r in rows])
+    stats = {cond: chrf_stats(hyp[cond], refs) for cond in CONDITIONS}
+    copies = {cond: as_mean_stats([is_copy(s[cond], h) for s, h in zip(src, hyp[cond])])
               for cond in CONDITIONS}
     copy_rate = level_scores({c: v.sum(0) for c, v in copies.items()}, mean_metric)
     return {**decompose(stats, chrf_metric),
@@ -159,6 +169,9 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--subset", default="all", help="'all', 'core' or a sentence count")
     ap.add_argument("--batch-size", type=int)
     ap.add_argument("--4bit", dest="four_bit", action="store_true")
+    ap.add_argument("--variant", choices=VARIANTS, help="Phase 3 rewritten inputs")
+    ap.add_argument("--phase3", action="store_true",
+                    help="write to results/mitigate (e.g. for a fine-tuned model)")
     args = ap.parse_args(argv)
 
     if args.kind == "nllb":
@@ -167,10 +180,13 @@ def main(argv: list[str] | None = None) -> None:
         model = ChatLLM(args.model, batch_size=args.batch_size or 16, four_bit=args.four_bit)
 
     for lang in args.langs:
-        rows = load_rows(lang, subset=args.subset)
+        rows = load_rows(lang, subset=args.subset, variant=args.variant)
+        hyps = run(model, args.model, lang, rows, args.variant)
         res = {"model": args.model, "lang": lang, "subset": args.subset, "metric": "chrF++",
-               **score(run(model, args.model, lang, rows), rows)}
-        write_json(RESULTS / "mt" / f"{slug(args.model)}_{lang}_{args.subset}.json", res)
+               "variant": args.variant, **score(hyps, rows, args.variant)}
+        write_json(results_dir("mt", args.phase3 or bool(args.variant)) /
+                   f"{slug(args.model)}_{lang}_{args.subset}{tag(args.variant)}.json",
+                   res)
         lv, gp = res["levels"], res["gaps"]
         print(f"{lang} {slug(args.model)} chrF++  L1 {lv['l1']['score']:.1f}  "
               f"L2c {lv['l2_canonical']['score']:.1f}  L2l {lv['l2_lexical']['score']:.1f}  "

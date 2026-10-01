@@ -29,7 +29,8 @@ import random
 
 import numpy as np
 
-from .conditions import LANG_NAME, LANGS, RESULTS, load_dcm, slug, write_json
+from .conditions import (DERIVED, LANG_NAME, LANGS, load_dcm, read_jsonl, results_dir, slug,
+                         write_json)
 from .stats import paired
 
 
@@ -54,6 +55,14 @@ def eval_set(lang: str) -> list[dict]:
             if c["script"] == "latin" and c["in_language"] and c["l1_backtranslit"]]
 
 
+def mitigated(lang: str, split: str) -> dict[str, dict]:
+    """Phase 3 rewrites of DravidianCodeMix comments (bt_text, rt_text) by id."""
+    path = DERIVED / "mitigated" / f"dcm_{lang}_{split}.jsonl"
+    if not path.exists():
+        raise FileNotFoundError(f"missing {path}; run latscript.mitigate.transforms")
+    return {r["id"]: r for r in read_jsonl(path)}
+
+
 def compare(y: np.ndarray, typed: dict, native: dict) -> dict:
     """Paired typed-vs-native comparison for every score both runs produced."""
     out = {}
@@ -68,8 +77,13 @@ def compare(y: np.ndarray, typed: dict, native: dict) -> dict:
 # --------------------------------------------------------------------------- fine-tuning
 
 def finetune(name: str, lang: str, seed: int, epochs: int = 3, lr: float = 2e-5,
-             batch_size: int = 32, max_len: int = 128):
-    """Fine-tune on train, pick the epoch by dev macro-F1; return a predict function."""
+             batch_size: int = 32, max_len: int = 128, augment: bool = False):
+    """Fine-tune on train, pick the epoch by dev macro-F1; return a predict function.
+
+    With `augment` (a Phase 3 mitigation), every Latin-script training comment
+    is added a second time in its back-transliterated form, with the same
+    label, so the model sees both scripts for the same content.
+    """
     import torch
     from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
@@ -79,7 +93,14 @@ def finetune(name: str, lang: str, seed: int, epochs: int = 3, lr: float = 2e-5,
 
     def data(split):
         rows = [c for c in load_dcm(lang, split) if c["in_language"]]
-        return [c["text"] for c in rows], np.array([int(c["offensive"]) for c in rows])
+        x, y = [c["text"] for c in rows], [int(c["offensive"]) for c in rows]
+        if augment and split == "train":
+            bt = mitigated(lang, "train")
+            extra = [(bt[c["id"]]["bt_text"], int(c["offensive"])) for c in rows
+                     if bt[c["id"]]["bt_text"]]
+            x += [t for t, _ in extra]
+            y += [l for _, l in extra]
+        return x, np.array(y)
 
     train_x, train_y = data("train")
     dev_x, dev_y = data("dev")
@@ -126,19 +147,28 @@ def finetune(name: str, lang: str, seed: int, epochs: int = 3, lr: float = 2e-5,
     return predict, best
 
 
-def run_finetune(name: str, lang: str, seeds: list[int]) -> dict:
+def run_finetune(name: str, lang: str, seeds: list[int], augment: bool = False,
+                 with_rt: bool = False) -> dict:
+    """Typed vs back-transliterated test comments; `with_rt` adds typed vs round-tripped."""
     rows = eval_set(lang)
     y = np.array([int(c["offensive"]) for c in rows])
+    rt = mitigated(lang, "test") if with_rt else None
     per_seed = []
     for seed in seeds:
-        predict, dev_f1 = finetune(name, lang, seed)
+        predict, dev_f1 = finetune(name, lang, seed, augment=augment)
         tp, ts = predict([c["text"] for c in rows])
         np_, ns = predict([c["l1_backtranslit"] for c in rows])
-        per_seed.append({"seed": seed, "dev_macro_f1": round(dev_f1, 4),
-                         **compare(y, {"pred": tp, "score": ts}, {"pred": np_, "score": ns})})
+        entry = {"seed": seed, "dev_macro_f1": round(dev_f1, 4),
+                 **compare(y, {"pred": tp, "score": ts}, {"pred": np_, "score": ns})}
+        if rt:
+            rp, rs = predict([rt[c["id"]]["rt_text"] for c in rows])
+            entry["rt"] = compare(y, {"pred": tp, "score": ts}, {"pred": rp, "score": rs})
+        per_seed.append(entry)
         import torch; torch.cuda.empty_cache()
     return {"kind": "finetune", "model": name, "lang": lang, "n": len(y),
-            "offensive": int(y.sum()), "a": "typed (Latin)", "b": "back-transliterated (native)",
+            "offensive": int(y.sum()), "augmented": augment,
+            "a": "typed (Latin)", "b": "back-transliterated (native)",
+            "rt": "round-tripped (Latin, normalized spelling)" if with_rt else None,
             "seeds": per_seed}
 
 
@@ -154,7 +184,8 @@ MAX_COMMENT_TOKENS = 384
 TOKEN_BUDGET = 2048
 
 
-def run_zeroshot(name: str, lang: str, four_bit: bool, batch_size: int = 16) -> dict:
+def run_zeroshot(name: str, lang: str, four_bit: bool, batch_size: int = 16,
+                 with_rt: bool = False) -> dict:
     import torch
     from .translate import ChatLLM
 
@@ -204,10 +235,16 @@ def run_zeroshot(name: str, lang: str, four_bit: bool, batch_size: int = 16) -> 
     rows = eval_set(lang)
     y = np.array([int(c["offensive"]) for c in rows])
     tp, ts = score([c["text"] for c in rows], "typed")
+    base = {"kind": "zeroshot", "model": name, "lang": lang, "n": len(y),
+            "max_comment_tokens": MAX_COMMENT_TOKENS, "offensive": int(y.sum()),
+            "a": "typed (Latin)"}
+    if with_rt:
+        # Phase 3: typed vs round-tripped only; typed vs native is in Phase 2.
+        rt = mitigated(lang, "test")
+        rp, rs = score([rt[c["id"]]["rt_text"] for c in rows], "round-tripped")
+        return {**base, "rt": compare(y, {"pred": tp, "score": ts}, {"pred": rp, "score": rs})}
     np_, ns = score([c["l1_backtranslit"] for c in rows], "native")
-    return {"kind": "zeroshot", "model": name, "lang": lang, "n": len(y),
-            "max_comment_tokens": MAX_COMMENT_TOKENS,
-            "offensive": int(y.sum()), "a": "typed (Latin)", "b": "back-transliterated (native)",
+    return {**base, "b": "back-transliterated (native)",
             "yes_rate": {"a": round(float(tp.mean()), 4), "b": round(float(np_.mean()), 4)},
             **compare(y, {"pred": tp, "score": ts}, {"pred": np_, "score": ns})}
 
@@ -219,20 +256,30 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--langs", nargs="+", default=list(LANGS))
     ap.add_argument("--seeds", nargs="+", type=int, default=[0, 1, 2])
     ap.add_argument("--4bit", dest="four_bit", action="store_true")
+    ap.add_argument("--augment", action="store_true",
+                    help="Phase 3: add back-transliterated copies of Latin training comments")
+    ap.add_argument("--rt", action="store_true",
+                    help="Phase 3: also score round-tripped (spelling-normalized) test comments")
     args = ap.parse_args(argv)
+    phase3 = args.augment or args.rt
+    suffix = ("_aug" if args.augment else "") + ("_rt" if args.rt else "")
 
     for lang in args.langs:
         if args.kind == "finetune":
-            res = run_finetune(args.model, lang, args.seeds)
+            res = run_finetune(args.model, lang, args.seeds, augment=args.augment, with_rt=args.rt)
             m = res["seeds"]
             line = "  ".join(f"seed {s['seed']}: typed {s['macro_f1']['a']['score']:.3f} "
-                             f"native {s['macro_f1']['b']['score']:.3f}" for s in m)
+                             f"native {s['macro_f1']['b']['score']:.3f}"
+                             + (f" rt {s['rt']['macro_f1']['b']['score']:.3f}" if "rt" in s else "")
+                             for s in m)
         else:
-            res = run_zeroshot(args.model, lang, args.four_bit)
-            line = (f"AUROC typed {res['auroc']['a']['score']:.3f} native {res['auroc']['b']['score']:.3f}"
-                    f"  macro-F1 typed {res['macro_f1']['a']['score']:.3f} "
-                    f"native {res['macro_f1']['b']['score']:.3f}")
-        write_json(RESULTS / "classify" / f"{args.kind}_{slug(args.model)}_{lang}.json", res)
+            res = run_zeroshot(args.model, lang, args.four_bit, with_rt=args.rt)
+            other, key = (res["rt"], "rt") if args.rt else (res, "native")
+            line = (f"AUROC typed {other['auroc']['a']['score']:.3f} "
+                    f"{key} {other['auroc']['b']['score']:.3f}  macro-F1 typed "
+                    f"{other['macro_f1']['a']['score']:.3f} {key} {other['macro_f1']['b']['score']:.3f}")
+        write_json(results_dir("classify", phase3) / f"{args.kind}_{slug(args.model)}_{lang}{suffix}.json",
+                   res)
         print(f"{lang} {slug(args.model)} {line}")
 
 

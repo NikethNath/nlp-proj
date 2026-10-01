@@ -46,7 +46,13 @@ into English and offensive-language detection. Methods and findings are in
 [docs/phase2_results.md](docs/phase2_results.md). The human-typed L3
 comparison waits on the collection.
 
-**Phases 3-4.** Mitigations and write-up have not started.
+**Phase 3 (mitigations).** Back-transliteration, spelling normalization by
+round-trip, fine-tuning LaBSE and NLLB on romanized FLORES dev, and
+script-augmented classifier training, each measured against the Phase 2
+baseline. Methods and findings are in [docs/mitigation.md](docs/mitigation.md);
+the full tables are in [docs/phase3_results.md](docs/phase3_results.md).
+
+**Phase 4.** The write-up has not started.
 
 ## Setup
 
@@ -88,6 +94,17 @@ Each step can also be run on its own, for example
 `python -m latscript.eval.translate nllb facebook/nllb-200-distilled-600M`.
 Model outputs are cached in `data/eval`, so interrupted runs resume.
 
+## Mitigating (Phase 3)
+
+```bash
+scripts/run_phase3.sh                         # rewrites, fine-tuning, re-evaluation, report
+.venv/bin/python -m latscript.mitigate.report # docs/phase3_results.md from results/mitigate/
+```
+
+The evaluation scripts take `--variant bt|rt` to run on back-transliterated or
+round-tripped inputs, and `--phase3` to write a fine-tuned model's results to
+`results/mitigate/`.
+
 The first build runs IndicXlit over about 30k FLORES words and 23k comment
 words, roughly 10 minutes on CPU. Later builds take about a minute.
 
@@ -118,7 +135,12 @@ src/latscript/
   eval/translate.py            translation into English, chrF++, copy rate
   eval/classify.py             DravidianCodeMix: fine-tuned and zero-shot, typed vs native
   eval/report.py               results/ -> docs/phase2_results.md
+  mitigate/transforms.py       back-transliteration and round-trip rewrites via IndicXlit
+  mitigate/fidelity.py         how faithfully the rewrites recover native words and remove variation
+  mitigate/train.py            fine-tuning LaBSE and NLLB on romanized FLORES dev
+  mitigate/report.py           results/mitigate/ -> docs/phase3_results.md
 results/                       Phase 2 summaries, one JSON per task, model and language
+results/mitigate/              Phase 3 summaries
 collection/                    manifest, form script, collection protocol
 review/                        hand-check sheets and instructions
 docs/                          data card and corpus statistics
@@ -127,6 +149,20 @@ tests/                         romanizer regressions, collection kit
 ```
 
 ## Findings so far
+
+**Mitigations**
+- **Back-transliteration recovers most of the loss on clean text.** It wins
+  back 88-89% of NLLB's L1 → L3 chrF++ loss, 81-82% of Qwen2.5-7B's, and all
+  of the retrieval loss, with no model change.
+- **Training on romanized text also works and generalizes.** One epoch on
+  FLORES dev recovers about half of LaBSE's retrieval loss. Two epochs
+  recover 26-34% of NLLB's, at a cost of 3.3 chrF++ on native script. Unseen
+  writers do as well as the ones trained on.
+- **Spelling normalization barely helps** (0-10% recovered), and it hurts a
+  classifier trained on real romanized comments.
+- **Script-augmented training makes the classifier work in both scripts.**
+  Adding back-transliterated copies of the training comments lifts Tamil
+  native-script macro-F1 from 0.72 to 0.80, with no loss on typed comments.
 
 **Model evaluation**
 - **The script causes most of the loss.** Romanized, top-1 retrieval to

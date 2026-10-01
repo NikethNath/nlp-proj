@@ -17,19 +17,20 @@ import argparse
 
 import numpy as np
 
-from .conditions import CONDITIONS, LANGS, RESULTS, load_rows, slug, texts, write_json
+from .conditions import (CONDITIONS, LANGS, VARIANTS, load_rows, results_dir, slug, tag,
+                         texts, write_json)
 from .stats import as_mean_stats, decompose, mean_metric
 
 ENCODERS = ["sentence-transformers/LaBSE", "BAAI/bge-m3"]
 
 
-def evaluate(model, name: str, lang: str, rows: list[dict]) -> dict:
+def evaluate(model, name: str, lang: str, rows: list[dict], variant: str | None = None) -> dict:
     def embed(items):
         return model.encode(items, batch_size=64, normalize_embeddings=True,
                             convert_to_numpy=True, show_progress_bar=False)
 
     en = embed([r["english"] for r in rows])
-    emb = {cond: embed([texts(r)[cond] for r in rows]) for cond in CONDITIONS}
+    emb = {cond: embed([texts(r, variant)[cond] for r in rows]) for cond in CONDITIONS}
     idx = np.arange(len(rows))
     retrieval, en_cos, l1_cos = {}, {}, {}
     for cond, e in emb.items():
@@ -37,7 +38,7 @@ def evaluate(model, name: str, lang: str, rows: list[dict]) -> dict:
         retrieval[cond] = as_mean_stats(sims.argmax(1) == idx)
         en_cos[cond] = as_mean_stats(sims[idx, idx])
         l1_cos[cond] = float(np.mean(np.sum(e * emb["l1"], axis=1)))
-    return {"encoder": name, "lang": lang, "n": len(rows),
+    return {"encoder": name, "lang": lang, "n": len(rows), "variant": variant,
             "en_retrieval": decompose(retrieval, mean_metric),
             "en_cosine": decompose(en_cos, mean_metric),
             "l1_cosine": {c: round(v, 4) for c, v in l1_cos.items()}}
@@ -48,6 +49,9 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--langs", nargs="+", default=list(LANGS))
     ap.add_argument("--encoders", nargs="+", default=ENCODERS)
     ap.add_argument("--subset", default="all")
+    ap.add_argument("--variant", choices=VARIANTS, help="Phase 3 rewritten inputs")
+    ap.add_argument("--phase3", action="store_true",
+                    help="write to results/mitigate (e.g. for a fine-tuned model)")
     args = ap.parse_args(argv)
 
     from sentence_transformers import SentenceTransformer
@@ -55,8 +59,10 @@ def main(argv: list[str] | None = None) -> None:
         model = SentenceTransformer(name, device="cuda")
         model.half()
         for lang in args.langs:
-            res = evaluate(model, name, lang, load_rows(lang, subset=args.subset))
-            write_json(RESULTS / "retrieval" / f"{slug(name)}_{lang}.json", res)
+            res = evaluate(model, name, lang,
+                           load_rows(lang, subset=args.subset, variant=args.variant), args.variant)
+            write_json(results_dir("retrieval", args.phase3 or bool(args.variant)) /
+                       f"{slug(name)}_{lang}{tag(args.variant)}.json", res)
             lv = res["en_retrieval"]["levels"]
             print(f"{lang} {slug(name):12s} top-1 to English  L1 {lv['l1']['score']:.3f}  "
                   f"L2c {lv['l2_canonical']['score']:.3f}  L2l {lv['l2_lexical']['score']:.3f}  "

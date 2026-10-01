@@ -12,4 +12,5 @@ protobuf
 tiktoken
 sacrebleu>=2.4
 sentence-transformers
+datasets
 scikit-learn

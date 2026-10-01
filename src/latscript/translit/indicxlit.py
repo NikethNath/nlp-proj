@@ -49,6 +49,7 @@ def table(words: Iterable[str], lang: str, direction: str) -> dict[str, str]:
     if direction not in ("indic2en", "en2indic"):
         raise ValueError(f"unknown direction {direction!r}")
     path = _cache_path(direction, lang)
+    _merge_shards(path)
     cached = _read_cache(path)
     wanted = {unicodedata.normalize("NFC", w) for w in words if w}
     if direction == "en2indic":
@@ -61,19 +62,51 @@ def table(words: Iterable[str], lang: str, direction: str) -> dict[str, str]:
                 f"{len(missing)} words need IndicXlit but {PYTHON} is missing; "
                 "run scripts/setup_indicxlit.sh")
         path.parent.mkdir(parents=True, exist_ok=True)
-        with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False,
-                                         encoding="utf-8") as tmp:
-            tmp.write("\n".join(missing) + "\n")
-        try:
-            subprocess.run(
-                [str(PYTHON), str(WORKER), "--direction", direction, "--lang", lang,
-                 "--input", tmp.name, "--output", str(path)],
-                check=True)
-        finally:
-            os.unlink(tmp.name)
+        _run_sharded(missing, lang, direction, path)
         cached = _read_cache(path)
 
     return {w: cached[w] for w in wanted if cached.get(w)}
+
+
+def _run_sharded(missing: list[str], lang: str, direction: str, path: Path) -> None:
+    """Run the worker as several processes and fold their output into the cache.
+
+    One beam-search process scales poorly past a few threads, so large jobs
+    are split into INDICXLIT_PROCS shards (default 4) sharing the CPU cores.
+    Each shard appends to its own file, so an interrupted run loses nothing:
+    leftover shard files are merged into the cache on the next call.
+    """
+    procs = max(1, min(int(os.environ.get("INDICXLIT_PROCS", 4)), len(missing) // 1000 or 1))
+    threads = max(1, (os.cpu_count() or 1) // procs)
+    outputs = [path.with_name(f"{path.stem}.shard{i}.tsv") for i in range(procs)]
+    inputs, running = [], []
+    try:
+        for i, out in enumerate(outputs):
+            with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False,
+                                             encoding="utf-8") as tmp:
+                tmp.write("\n".join(missing[i::procs]) + "\n")
+            inputs.append(tmp.name)
+            running.append(subprocess.Popen(
+                [str(PYTHON), str(WORKER), "--direction", direction, "--lang", lang,
+                 "--input", tmp.name, "--output", str(out), "--threads", str(threads)]))
+        codes = [p.wait() for p in running]
+    finally:
+        for p in running:
+            if p.poll() is None:
+                p.kill()
+        for name in inputs:
+            os.unlink(name)
+        _merge_shards(path)
+    if any(codes):
+        raise RuntimeError(f"IndicXlit worker failed with exit codes {codes}")
+
+
+def _merge_shards(path: Path) -> None:
+    """Append leftover per-shard outputs to the cache file and remove them."""
+    for shard in sorted(path.parent.glob(f"{path.stem}.shard*.tsv")):
+        with shard.open(encoding="utf-8") as src, path.open("a", encoding="utf-8") as dst:
+            dst.write(src.read())
+        shard.unlink()
 
 
 def romanize(text: str, lang: str, lookup: dict[str, str]) -> str:

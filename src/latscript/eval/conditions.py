@@ -38,12 +38,22 @@ def level(condition: str) -> str:
     return "l3" if condition.startswith("l3_") else condition
 
 
-def texts(row: dict) -> dict[str, str]:
-    """Condition -> input text for one FLORES row."""
+VARIANTS = ("bt", "rt")
+
+
+def texts(row: dict, variant: str | None = None) -> dict[str, str]:
+    """Condition -> input text for one FLORES row.
+
+    With a Phase 3 `variant` ('bt' back-transliterated, 'rt' round-tripped),
+    every romanized condition is replaced by its rewritten form; L1 stays the
+    original native text, so gaps are still measured from the same reference.
+    """
     out = {"l1": row["l1_native"], "l2_canonical": row["l2_canonical"],
            "l2_lexical": row["l2_lexical"]}
     for i, t in enumerate(row["l3_writers"][:N_WRITERS]):
         out[f"l3_{i}"] = t
+    if variant:
+        out.update({c: row[f"{variant}_{c}"] for c in out if c != "l1"})
     return out
 
 
@@ -52,13 +62,23 @@ def core_indices(path: Path = MANIFEST) -> list[int]:
     return sorted(set(manifest["anchors"]) | {i for block in manifest["blocks"] for i in block})
 
 
-def load_rows(lang: str, split: str = "devtest", subset: str = "all") -> list[dict]:
-    """FLORES rows in index order; `subset` is 'all', 'core', or an integer limit."""
+def load_rows(lang: str, split: str = "devtest", subset: str = "all",
+              variant: str | None = None) -> list[dict]:
+    """FLORES rows in index order; `subset` is 'all', 'core', or an integer limit.
+
+    A `variant` merges in the rewritten inputs from data/derived/mitigated.
+    """
     path = DERIVED / f"flores_{lang}_{split}.jsonl"
     if not path.exists():
         raise FileNotFoundError(f"missing {path}; build the corpus first (see README)")
     with path.open(encoding="utf-8") as fh:
         rows = [json.loads(line) for line in fh]
+    if variant:
+        mpath = DERIVED / "mitigated" / f"flores_{lang}_{split}.jsonl"
+        if not mpath.exists():
+            raise FileNotFoundError(f"missing {mpath}; run latscript.mitigate.transforms")
+        extra = {r["id"]: r for r in read_jsonl(mpath)}
+        rows = [{**r, **extra[r["id"]]} for r in rows]
     if subset == "core":
         keep = set(core_indices())
         rows = [r for r in rows if r["idx"] in keep]
@@ -97,3 +117,13 @@ def write_json(path: Path, obj) -> Path:
 
 def slug(model: str) -> str:
     return model.split("/")[-1].replace(":", "-")
+
+
+def tag(variant: str | None) -> str:
+    """Filename suffix for a Phase 3 input variant ('' for the original inputs)."""
+    return f"_{variant}" if variant else ""
+
+
+def results_dir(task: str, phase3: bool = False) -> Path:
+    """results/<task> for Phase 2, results/mitigate/<task> for Phase 3 runs."""
+    return RESULTS / "mitigate" / task if phase3 else RESULTS / task

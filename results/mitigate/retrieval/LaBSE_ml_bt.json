@@ -1,0 +1,172 @@
+{
+ "encoder": "sentence-transformers/LaBSE",
+ "lang": "ml",
+ "n": 1012,
+ "variant": "bt",
+ "en_retrieval": {
+  "n": 1012,
+  "higher_is_better": true,
+  "levels": {
+   "l1": {
+    "score": 0.999,
+    "ci": [
+     0.997,
+     1.0
+    ]
+   },
+   "l2_canonical": {
+    "score": 0.999,
+    "ci": [
+     0.997,
+     1.0
+    ]
+   },
+   "l2_lexical": {
+    "score": 0.999,
+    "ci": [
+     0.997,
+     1.0
+    ]
+   },
+   "l3": {
+    "score": 0.999,
+    "ci": [
+     0.997,
+     1.0
+    ]
+   }
+  },
+  "l3_writers": [
+   0.999,
+   0.999,
+   0.999,
+   0.999,
+   0.999
+  ],
+  "gaps": {
+   "total": {
+    "loss": -0.0,
+    "ci": [
+     -0.0,
+     0.0
+    ]
+   },
+   "script_canonical": {
+    "loss": 0.0,
+    "ci": [
+     0.0,
+     0.0
+    ]
+   },
+   "spelling_canonical": {
+    "loss": -0.0,
+    "ci": [
+     -0.0,
+     0.0
+    ]
+   },
+   "script_lexical": {
+    "loss": 0.0,
+    "ci": [
+     0.0,
+     0.0
+    ]
+   },
+   "spelling_lexical": {
+    "loss": -0.0,
+    "ci": [
+     -0.0,
+     0.0
+    ]
+   }
+  }
+ },
+ "en_cosine": {
+  "n": 1012,
+  "higher_is_better": true,
+  "levels": {
+   "l1": {
+    "score": 0.8537,
+    "ci": [
+     0.8507,
+     0.8569
+    ]
+   },
+   "l2_canonical": {
+    "score": 0.8401,
+    "ci": [
+     0.8366,
+     0.8436
+    ]
+   },
+   "l2_lexical": {
+    "score": 0.8376,
+    "ci": [
+     0.8342,
+     0.8414
+    ]
+   },
+   "l3": {
+    "score": 0.8247,
+    "ci": [
+     0.8212,
+     0.8284
+    ]
+   }
+  },
+  "l3_writers": [
+   0.8206,
+   0.8248,
+   0.8309,
+   0.82,
+   0.827
+  ],
+  "gaps": {
+   "total": {
+    "loss": 0.029,
+    "ci": [
+     0.0272,
+     0.0308
+    ]
+   },
+   "script_canonical": {
+    "loss": 0.0136,
+    "ci": [
+     0.0121,
+     0.0152
+    ]
+   },
+   "spelling_canonical": {
+    "loss": 0.0154,
+    "ci": [
+     0.0138,
+     0.0172
+    ]
+   },
+   "script_lexical": {
+    "loss": 0.016,
+    "ci": [
+     0.0143,
+     0.0178
+    ]
+   },
+   "spelling_lexical": {
+    "loss": 0.013,
+    "ci": [
+     0.0116,
+     0.0144
+    ]
+   }
+  }
+ },
+ "l1_cosine": {
+  "l1": 1.0,
+  "l2_canonical": 0.9775,
+  "l2_lexical": 0.9736,
+  "l3_0": 0.9492,
+  "l3_1": 0.9546,
+  "l3_2": 0.9634,
+  "l3_3": 0.9463,
+  "l3_4": 0.9585
+ }
+}

@@ -26,10 +26,11 @@ def main() -> None:
     ap.add_argument("--output", required=True)
     ap.add_argument("--beam", type=int, default=4)
     ap.add_argument("--chunk", type=int, default=512)
+    ap.add_argument("--threads", type=int, default=os.cpu_count() or 1)
     args = ap.parse_args()
 
     import torch
-    torch.set_num_threads(os.cpu_count() or 1)
+    torch.set_num_threads(args.threads)
     from ai4bharat.transliteration import XlitEngine
 
     if args.direction == "indic2en":

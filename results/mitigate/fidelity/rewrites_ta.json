@@ -1,0 +1,30 @@
+{
+ "lang": "ta",
+ "backtranslit": {
+  "l2_canonical": {
+   "word_accuracy": 0.9131,
+   "aligned_words": 15266,
+   "sentence_ned_to_l1": 0.0185
+  },
+  "l2_lexical": {
+   "word_accuracy": 0.8679,
+   "aligned_words": 15266,
+   "sentence_ned_to_l1": 0.0251
+  },
+  "l3": {
+   "word_accuracy": 0.7945,
+   "aligned_words": 76330,
+   "sentence_ned_to_l1": 0.0409
+  }
+ },
+ "roundtrip": {
+  "l3_writer_pair_word_disagreement": {
+   "before": 0.4269,
+   "after": 0.1757
+  },
+  "l3_vs_l2_canonical_word_disagreement": {
+   "before": 0.5042,
+   "after": 0.1667
+  }
+ }
+}

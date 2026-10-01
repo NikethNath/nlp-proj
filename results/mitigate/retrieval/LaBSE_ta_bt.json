@@ -1,0 +1,172 @@
+{
+ "encoder": "sentence-transformers/LaBSE",
+ "lang": "ta",
+ "n": 1012,
+ "variant": "bt",
+ "en_retrieval": {
+  "n": 1012,
+  "higher_is_better": true,
+  "levels": {
+   "l1": {
+    "score": 1.0,
+    "ci": [
+     1.0,
+     1.0
+    ]
+   },
+   "l2_canonical": {
+    "score": 1.0,
+    "ci": [
+     1.0,
+     1.0
+    ]
+   },
+   "l2_lexical": {
+    "score": 1.0,
+    "ci": [
+     1.0,
+     1.0
+    ]
+   },
+   "l3": {
+    "score": 1.0,
+    "ci": [
+     1.0,
+     1.0
+    ]
+   }
+  },
+  "l3_writers": [
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0
+  ],
+  "gaps": {
+   "total": {
+    "loss": 0.0,
+    "ci": [
+     0.0,
+     0.0
+    ]
+   },
+   "script_canonical": {
+    "loss": 0.0,
+    "ci": [
+     0.0,
+     0.0
+    ]
+   },
+   "spelling_canonical": {
+    "loss": 0.0,
+    "ci": [
+     0.0,
+     0.0
+    ]
+   },
+   "script_lexical": {
+    "loss": 0.0,
+    "ci": [
+     0.0,
+     0.0
+    ]
+   },
+   "spelling_lexical": {
+    "loss": 0.0,
+    "ci": [
+     0.0,
+     0.0
+    ]
+   }
+  }
+ },
+ "en_cosine": {
+  "n": 1012,
+  "higher_is_better": true,
+  "levels": {
+   "l1": {
+    "score": 0.8489,
+    "ci": [
+     0.8458,
+     0.8521
+    ]
+   },
+   "l2_canonical": {
+    "score": 0.8366,
+    "ci": [
+     0.8334,
+     0.8396
+    ]
+   },
+   "l2_lexical": {
+    "score": 0.8312,
+    "ci": [
+     0.8279,
+     0.8345
+    ]
+   },
+   "l3": {
+    "score": 0.8203,
+    "ci": [
+     0.8169,
+     0.8237
+    ]
+   }
+  },
+  "l3_writers": [
+   0.819,
+   0.8211,
+   0.8211,
+   0.8195,
+   0.8209
+  ],
+  "gaps": {
+   "total": {
+    "loss": 0.0286,
+    "ci": [
+     0.0267,
+     0.0305
+    ]
+   },
+   "script_canonical": {
+    "loss": 0.0123,
+    "ci": [
+     0.011,
+     0.0138
+    ]
+   },
+   "spelling_canonical": {
+    "loss": 0.0163,
+    "ci": [
+     0.0147,
+     0.0178
+    ]
+   },
+   "script_lexical": {
+    "loss": 0.0177,
+    "ci": [
+     0.0159,
+     0.0196
+    ]
+   },
+   "spelling_lexical": {
+    "loss": 0.0109,
+    "ci": [
+     0.0097,
+     0.0121
+    ]
+   }
+  }
+ },
+ "l1_cosine": {
+  "l1": 1.0,
+  "l2_canonical": 0.979,
+  "l2_lexical": 0.9678,
+  "l3_0": 0.9463,
+  "l3_1": 0.9512,
+  "l3_2": 0.9512,
+  "l3_3": 0.9482,
+  "l3_4": 0.9521
+ }
+}

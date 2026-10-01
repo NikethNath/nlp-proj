@@ -1,0 +1,89 @@
+{
+ "model": "Qwen/Qwen2.5-7B-Instruct",
+ "lang": "ml",
+ "subset": "core",
+ "metric": "chrF++",
+ "variant": "rt",
+ "n": 248,
+ "higher_is_better": true,
+ "levels": {
+  "l1": {
+   "score": 37.938,
+   "ci": [
+    36.3381,
+    39.5094
+   ]
+  },
+  "l2_canonical": {
+   "score": 24.2111,
+   "ci": [
+    23.299,
+    25.1662
+   ]
+  },
+  "l2_lexical": {
+   "score": 24.5205,
+   "ci": [
+    23.5464,
+    25.5549
+   ]
+  },
+  "l3": {
+   "score": 24.233,
+   "ci": [
+    23.4622,
+    25.088
+   ]
+  }
+ },
+ "l3_writers": [
+  24.2826,
+  24.1886,
+  24.3688,
+  23.9904,
+  24.3345
+ ],
+ "gaps": {
+  "total": {
+   "loss": 13.705,
+   "ci": [
+    12.2346,
+    15.2222
+   ]
+  },
+  "script_canonical": {
+   "loss": 13.7268,
+   "ci": [
+    12.2769,
+    15.268
+   ]
+  },
+  "spelling_canonical": {
+   "loss": -0.0218,
+   "ci": [
+    -0.5625,
+    0.4444
+   ]
+  },
+  "script_lexical": {
+   "loss": 13.4174,
+   "ci": [
+    11.8045,
+    15.0645
+   ]
+  },
+  "spelling_lexical": {
+   "loss": 0.2875,
+   "ci": [
+    -0.2573,
+    0.7824
+   ]
+  }
+ },
+ "copy_rate": {
+  "l1": 0.0,
+  "l2_canonical": 0.004,
+  "l2_lexical": 0.0,
+  "l3": 0.0032
+ }
+}
