@@ -99,7 +99,9 @@ PYTHONPATH=src .venv-eval/bin/python -m latscript.eval.run --task mt --model gpt
 scripts/demo.sh corpus --lang ml        # one sentence at every level, translated live by NLLB
 scripts/demo.sh type --lang ml "njan innu vaikunneram kadappurathu pokum"
 scripts/demo.sh classify --lang ta "2.06 sema serupadi to thalaivar"
+scripts/demo.sh corpus --lang ml --idx 210 --model both   # NLLB vs Gemma-3 4B
 scripts/demo.sh results                 # main tables, no model needed
+scripts/demo.sh stop                    # stop the Gemma server started by --model gemma/both
 ```
 
 The demo runs on CPU and offline once the models are in the local Hugging Face cache.

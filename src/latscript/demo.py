@@ -6,6 +6,8 @@
     python -m latscript.demo classify --lang ta "padam semma mokka da"
 
 ``corpus --offline`` shows the saved translations instead of running NLLB.
+``--model gemma`` or ``--model both`` (corpus, type) also uses Gemma-3 4B through a local
+llama.cpp server, started on first use and left running; ``python -m latscript.demo stop`` stops it.
 """
 from __future__ import annotations
 
@@ -44,6 +46,61 @@ def load_nllb():
     say("loading NLLB-200 600M (about 15 s)...")
     from .eval.backends import NLLB
     return NLLB()
+
+
+GEMMA_URL = "http://127.0.0.1:8091"
+GEMMA_GGUF = Path.home() / "models" / "gemma-3-4b-it-Q4_K_M.gguf"
+LLAMA_SERVER = Path.home() / ".local" / "llamacpp" / "llama-b11567" / "llama-server"
+
+
+def gemma_up() -> bool:
+    import requests
+    try:
+        return requests.get(f"{GEMMA_URL}/health", timeout=2).ok
+    except requests.RequestException:
+        return False
+
+
+def start_gemma() -> None:
+    """Run llama-server as its own systemd user unit so it outlives the demo and stays isolated."""
+    import subprocess
+    if gemma_up():
+        return
+    say("starting Gemma-3 4B (about 15 s, once; stays running until 'demo.sh stop')...")
+    subprocess.run(["systemd-run", "--user", "--unit=demo-gemma", "--collect", "-p", "MemoryMax=6G",
+                    str(LLAMA_SERVER), "-m", str(GEMMA_GGUF), "-c", "4096", "--parallel", "3",
+                    "-t", "8", "--host", "127.0.0.1", "--port", "8091"],
+                   check=True, capture_output=True)
+    for _ in range(120):
+        if gemma_up():
+            return
+        time.sleep(1)
+    raise SystemExit("Gemma server did not start; see: journalctl --user -u demo-gemma")
+
+
+def translate(texts: list[str], lang: str, model: str) -> list[str]:
+    t0 = time.perf_counter()
+    if model == "nllb":
+        out = [h.text for h in load_nllb().translate(texts, lang)]
+    else:
+        from .eval.analyze import clean
+        from .eval.backends import Chat
+        from .eval.run import MT_SYSTEM
+        start_gemma()
+        say(f"Gemma is translating {len(texts)} versions (about 5-10 s each on this CPU)...")
+        jobs = [[{"role": "system", "content": MT_SYSTEM.format(lang=LANG[lang])},
+                 {"role": "user", "content": x}] for x in texts]
+        res = dict(Chat("gemma", base_url=f"{GEMMA_URL}/v1", parallel=3).map(jobs, 160))
+        out = [clean(res[i].text) for i in range(len(texts))]
+    say(f"{len(texts)} translations in {time.perf_counter() - t0:.0f} s")
+    return out
+
+
+MODEL_NAME = {"nllb": "NLLB-200 600M", "gemma": "Gemma-3 4B"}
+
+
+def models_of(choice: str) -> list[str]:
+    return ["nllb", "gemma"] if choice == "both" else [choice]
 
 
 def chrf(hyp: str, ref: str) -> float:
@@ -113,25 +170,25 @@ def mode_corpus(args) -> None:
     levels = [("L1 native", "l1"), ("L2 canonical", "l2c"), ("L3 writer 1", "l3_0"),
               ("L3 writer 2", "l3_1"), ("L3 writer 3", "l3_2"), ("back-xlit w1", "bx_0")]
     levels = [(n, f) for n, f in levels if f in r]
+    outputs = {}
     if args.offline:
         saved = {}
         for x in read_jsonl(ROOT / "results" / "outputs" / f"mt_nllb-600m_{args.lang}.jsonl"):
             if x["id"] == r["id"]:
                 saved[x["cond"]] = x["out"]
-        hyps = [saved.get(f, "(not in the saved sample: run without --offline)") for _, f in levels]
+        outputs["nllb"] = [saved.get(f, "(not in the saved sample: run without --offline)") for _, f in levels]
     else:
-        model = load_nllb()
-        t0 = time.perf_counter()
-        hyps = [h.text for h in model.translate([r[f] for _, f in levels], args.lang)]
-        say(f"translated {len(levels)} versions in {time.perf_counter() - t0:.1f} s")
+        for m in models_of(args.model):
+            outputs[m] = translate([r[f] for _, f in levels], args.lang, m)
     rule(f"{LANG[args.lang]} FLORES sentence {r['idx']}: the same meaning, written {len(levels)} ways")
     for (name, f) in levels:
         row(name, r[f])
-    rule("NLLB-200's English translation of each, with chrF++ against the reference")
-    row("reference", r["ref"])
-    print()
-    for (name, f), h in zip(levels, hyps):
-        row(name, h, f"chrF++ {chrf(h, r['ref']):5.1f}" if not h.startswith("(not") else "")
+    for m, hyps in outputs.items():
+        rule(f"{MODEL_NAME[m]}'s English translation of each, with chrF++ against the reference")
+        row("reference", r["ref"])
+        print()
+        for (name, f), h in zip(levels, hyps):
+            row(name, h, f"chrF++ {chrf(h, r['ref']):5.1f}" if not h.startswith("(not") else "")
     rule()
 
 
@@ -141,14 +198,14 @@ def mode_type(args) -> None:
     versions = [("you typed", args.text)]
     versions += [(f"writer {i + 1}", sp.respell(native, i)) for i in range(3)]
     versions += [("back-xlit", native)]
-    model = load_nllb()
-    hyps = [h.text for h in model.translate([v for _, v in versions], args.lang)]
+    outputs = {m: translate([v for _, v in versions], args.lang, m) for m in models_of(args.model)}
     rule(f"Your {LANG[args.lang]} sentence, as other people might type it")
     for name, v in versions:
         row(name, v)
-    rule("NLLB-200's English translation of each version")
-    for (name, _), h in zip(versions, hyps):
-        row(name, h)
+    for m, hyps in outputs.items():
+        rule(f"{MODEL_NAME[m]}'s English translation of each version")
+        for (name, _), h in zip(versions, hyps):
+            row(name, h)
     rule()
     left = [w for w in LATIN_WORD.findall(native)]
     if left:
@@ -182,6 +239,12 @@ def mode_classify(args) -> None:
     rule("the decision changes with spelling" if flips else "the decision is stable for this comment")
 
 
+def mode_stop(_args) -> None:
+    import subprocess
+    subprocess.run(["systemctl", "--user", "stop", "demo-gemma"], capture_output=True)
+    print("Gemma server stopped." if not gemma_up() else "Gemma server is still running.")
+
+
 def main(argv=None) -> None:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     sub = ap.add_subparsers(dest="mode", required=True)
@@ -190,14 +253,19 @@ def main(argv=None) -> None:
     p.add_argument("--lang", choices=LANG, default="ml")
     p.add_argument("--idx", type=int, help="FLORES devtest index (default: random from the evaluated 200)")
     p.add_argument("--seed", type=int, default=int(time.time()))
-    p.add_argument("--offline", action="store_true", help="use saved translations, no model")
+    p.add_argument("--offline", action="store_true", help="use saved NLLB translations, no model")
+    p.add_argument("--model", choices=["nllb", "gemma", "both"], default="nllb")
+    sub.add_parser("stop")
     for name in ("type", "classify"):
         p = sub.add_parser(name)
         p.add_argument("--lang", choices=LANG, default="ml")
+        if name == "type":
+            p.add_argument("--model", choices=["nllb", "gemma", "both"], default="nllb")
         p.add_argument("--xlit", action="store_true", help="run IndicXlit on words not in the dictionary")
         p.add_argument("text")
     args = ap.parse_args(argv)
-    {"results": mode_results, "corpus": mode_corpus, "type": mode_type, "classify": mode_classify}[args.mode](args)
+    {"results": mode_results, "corpus": mode_corpus, "type": mode_type, "classify": mode_classify,
+     "stop": mode_stop}[args.mode](args)
 
 
 if __name__ == "__main__":
