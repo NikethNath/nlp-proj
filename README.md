@@ -93,6 +93,17 @@ PYTHONPATH=src .venv-eval/bin/python -m latscript.eval.run --task mt --model gpt
     --base-url https://api.openai.com/v1 --api-key-env OPENAI_API_KEY --lang ml --n 200 --conds l1 l2c l3 bx cn
 ```
 
+## Demo
+
+```bash
+scripts/demo.sh corpus --lang ml        # one sentence at every level, translated live by NLLB
+scripts/demo.sh type --lang ml "njan innu vaikunneram kadappurathu pokum"
+scripts/demo.sh classify --lang ta "2.06 sema serupadi to thalaivar"
+scripts/demo.sh results                 # main tables, no model needed
+```
+
+The demo runs on CPU and offline once the models are in the local Hugging Face cache.
+
 ## Layout
 
 ```
@@ -112,6 +123,7 @@ src/latscript/
   human/analyze.py             inter-writer divergence, human vs simulated L3
   corpus_stats.py              statistics for the data card
   review.py                    hand-check sheet export
+  demo.py                      classroom demo (scripts/demo.sh)
   eval/prepare.py              every model input: L1/L2/L3, back-transliterated and canonicalized L3
   eval/backends.py             NLLB (transformers) and any OpenAI-compatible chat endpoint
   eval/run.py                  one model x task x language over a list of conditions (resumable)
