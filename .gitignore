@@ -1,5 +1,6 @@
 .venv/
 .venv-xlit/
+.venv-eval/
 __pycache__/
 *.pyc
 .pytest_cache/
@@ -11,3 +12,6 @@ data/raw/
 data/derived/
 data/cache/
 dist/
+
+# Trained adapters - rebuilt by latscript.eval.train_lora
+data/models/

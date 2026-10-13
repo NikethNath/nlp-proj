@@ -1,0 +1,11 @@
+{
+ "method": "linear probe: frozen MuRIL mean-pooled, standardized, class-balanced logistic regression; C and decision threshold chosen on the dev split by macro F1",
+ "C": 0.01,
+ "threshold": 0.65,
+ "dev_macro_f1": 0.7235,
+ "train_comments": 34756,
+ "dev_comments": 4369,
+ "max_len": 64,
+ "cpu_hours": 0.359,
+ "threads": 8
+}

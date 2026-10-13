@@ -35,11 +35,19 @@ statistics, limitations and licenses.
 - the collection kit;
 - the release bundle.
 
-Two steps need people:
+Two steps still need people:
 - the hand check of 50 sentences ([review/README.md](review/README.md));
 - collecting the human-written subset ([collection/README.md](collection/README.md)).
 
-**Phases 2-4.** Model evaluation, mitigations and write-up have not started.
+**Phases 2-3 (quantify, mitigate).** Done on CPU with stand-in models for each planned role:
+- NLLB-200 600M for translation;
+- Gemma-3 4B, zero-shot;
+- MuRIL, fine-tuned;
+- a character n-gram classifier.
+
+The harness runs any OpenAI-compatible endpoint, so the planned 8B and frontier-API models only need a GPU or API key. Results are in [results/README.md](results/README.md).
+
+**Literature survey.** [docs/related_work.md](docs/related_work.md).
 
 ## Setup
 
@@ -69,6 +77,22 @@ export PYTHONPATH=src
 The first build runs IndicXlit over about 30k FLORES words and 23k comment
 words, roughly 10 minutes on CPU. Later builds take about a minute.
 
+## Evaluation (Phases 2-3)
+
+```bash
+scripts/setup_eval.sh          # .venv-eval (Python 3.12, CPU torch), llama.cpp server, Gemma/Qwen GGUFs
+scripts/run_all.sh             # prepare inputs, run every model, train classifiers and LoRA, analyze
+```
+
+`run_all.sh` resumes if interrupted and documents the sample sizes used for the
+reported results (set for an 8-core CPU; raise `N_NLLB`, `N_LLM`, `N_POS` on a GPU).
+To evaluate a hosted model, point `run.py` at its endpoint:
+
+```bash
+PYTHONPATH=src .venv-eval/bin/python -m latscript.eval.run --task mt --model gpt-4o --chat gpt-4o \
+    --base-url https://api.openai.com/v1 --api-key-env OPENAI_API_KEY --lang ml --n 200 --conds l1 l2c l3 bx cn
+```
+
 ## Layout
 
 ```
@@ -88,14 +112,44 @@ src/latscript/
   human/analyze.py             inter-writer divergence, human vs simulated L3
   corpus_stats.py              statistics for the data card
   review.py                    hand-check sheet export
+  eval/prepare.py              every model input: L1/L2/L3, back-transliterated and canonicalized L3
+  eval/backends.py             NLLB (transformers) and any OpenAI-compatible chat endpoint
+  eval/run.py                  one model x task x language over a list of conditions (resumable)
+  eval/train_clf.py            MuRIL fine-tuning and the char n-gram baseline
+  eval/train_lora.py           LoRA adapter for NLLB on romanized FLORES dev
+  eval/fertility.py            tokenizer fertility per level
+  eval/analyze.py              chrF++/F1, paired bootstrap, decomposition, consistency, costs
 collection/                    manifest, form script, collection protocol
 review/                        hand-check sheets and instructions
-docs/                          data card and corpus statistics
+docs/                          data card, corpus statistics, related work
+results/                       model outputs, summary.json, results tables
 scripts/                       data download, IndicXlit setup and worker, release bundling
-tests/                         romanizer regressions, collection kit
+tests/                         romanizer regressions, collection kit, evaluation helpers
 ```
 
-## Findings so far
+## Findings
+
+Full tables with 95% bootstrap intervals: [results/README.md](results/README.md).
+
+**Where the loss comes from (Phase 2)**
+
+The test translates FLORES devtest into English and scores chrF++. NLLB-200 600M was run on 200 sentences, Gemma-3 4B on 30.
+- **The script term dominates.** NLLB loses about 42 points going from native script to canonical romanization. Natural spelling variation adds only 1.3 (Malayalam) and 0.3 (Tamil) more.
+- **Prior exposure shrinks the script term.** Gemma has seen romanized text, and its script term is 27–31 points. Its spelling term is not significant for Malayalam and 2.4 points for Tamil, 7% of the drop. The prediction that spelling would dominate does not hold for these models.
+- **Spelling makes outputs unstable.** Two spellings of the same sentence get translations that agree at only 24–28 chrF++ (Gemma) or 52–54 (NLLB).
+- **Romanization is not cheaper for modern tokenizers.** For Llama-3.1 and Qwen3, romanizing cuts tokens about fourfold. For Gemma-3, Sarvam-1, MuRIL, NLLB and GPT-4o, it costs more tokens than native script.
+
+**Mitigations (Phase 3)**
+- **Back-transliterating** L3 to native script with IndicXlit recovers 22–37 points. It ends within 4–5 points of the native-script ceiling.
+- **Canonicalizing spelling** gives no significant accuracy gain, but it raises output agreement to 71–80.
+- **Four-shot prompting** costs about 4x the prompt tokens and gains at most +2.2 points, not significant.
+- **LoRA on NLLB** (rank 16, 1.9 CPU-hours) adds +8.2 and +6.5 points on L3 and leaves native script unchanged.
+
+**Real romanized comments**
+- Re-spelling a comment while keeping its words flips the char n-gram classifier's decision for 25% of Tamil comments.
+- It flips zero-shot Gemma's decision for 38–45% of comments, and a MuRIL linear probe's for 14–32%.
+
+## Phase 1 findings
 
 **Spelling in the source data**
 - **Real spelling is inconsistent.** Two Dakshina annotators spell the same
